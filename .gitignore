@@ -16,3 +16,4 @@ build/
 # without an API key. Only raw provider dumps are ignored.
 results/raw/
 results/_smoke/
+# site/ IS the deployed Space and is committed on purpose.

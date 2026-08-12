@@ -51,7 +51,15 @@ gate: ## The CI eval gate, run locally
 verify: ## Cross-check every number quoted in the docs against results/
 	uv run python scripts/verify_claims.py
 
-check: lint test gate verify ## Everything CI runs
+site: ## Build the static Space (browser guardrail) into site/
+	uv run python scripts/export_web_model.py
+	uv run python scripts/build_site.py
+	node site/parity.test.js
+
+site-serve: ## Preview the static site on :8000
+	@echo 'http://localhost:8000' && cd site && python3 -m http.server 8000
+
+check: lint test gate verify site ## Everything CI runs
 	@echo "all checks green"
 
 docker: ## Build the container
@@ -63,4 +71,4 @@ docker-run: ## Run the container on :8080
 clean: ## Remove caches (keeps results/)
 	rm -rf .pytest_cache .ruff_cache .mypy_cache **/__pycache__ .cache
 
-.PHONY: help setup setup-all lint fmt test typecheck data battery distill figures all serve gate verify check docker docker-run clean
+.PHONY: help setup setup-all lint fmt test typecheck data battery distill figures all serve gate verify site site-serve check docker docker-run clean

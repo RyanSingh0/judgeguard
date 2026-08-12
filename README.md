@@ -74,7 +74,12 @@ points, the student blocks it outright. Neither is neutral about length.
 
 ## Try it
 
-**🔗 Live demo: _[add your deploy URL here]_** · or in 90 seconds locally:
+**🔗 Live demo: _[add your deploy URL here]_** — the guardrail runs **in your browser**, no backend.
+
+The distilled student is a logistic model over hashed n-grams plus an isotonic step function, so
+the whole inference path is a sparse dot product. `site/` ships a JavaScript port that reproduces
+scikit-learn's probabilities to within 1e-6 on every fixture (`node site/parity.test.js`, gated in
+CI) — the same model, not a mock-up. Or run it locally in 90 seconds:
 
 ```bash
 git clone https://github.com/RyanSingh0/judgeguard.git && cd judgeguard
@@ -269,7 +274,7 @@ Add real models by dropping any of `GEMINI_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_A
 figures, real numbers.
 
 **→ [Full RUNBOOK: setup, live runs, Docker, deploy, CI, troubleshooting](docs/RUNBOOK.md)**
-**→ [Deploy to Hugging Face Spaces](deploy/hf-space/DEPLOY.md)**
+**→ [Deploy the demo (free static Space, or Docker)](deploy/hf-space/DEPLOY.md)**
 
 ---
 

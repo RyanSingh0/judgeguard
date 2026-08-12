@@ -33,6 +33,27 @@ jobs:
       - name: Types
         run: uv run mypy judgeguard || true
 
+  browser-guardrail:
+    # The static Space runs a JavaScript port of the distilled student. If it
+    # ever stops agreeing with scikit-learn, the live demo is showing a
+    # different model from the one the README describes.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --extra dev
+      - name: Rebuild the exported model and the site
+        run: |
+          uv run python scripts/export_web_model.py
+          uv run python scripts/build_site.py
+      - name: Python/JavaScript parity
+        run: node site/parity.test.js
+
   docker:
     runs-on: ubuntu-latest
     steps:

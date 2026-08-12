@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JudgeGuard — can you trust the judge?</title>
+<meta name="description" content="Measuring LLM judge reliability with degradation-generated gold labels. The distilled guardrail runs entirely in your browser."/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card { background:#fff; border:1px solid #e6e9ee; border-radius:14px; }
+  .pulse-dot { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:1} }
+</style>
+</head>
+<body class="bg-[#f6f8fa] text-[#16202e]">
+
+<header class="border-b border-[#e6e9ee] bg-white">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center gap-4">
+    <div class="flex-1 min-w-[260px]">
+      <h1 class="text-2xl font-bold tracking-tight">JudgeGuard</h1>
+      <p class="text-sm text-slate-600">Can you trust the judge? Measured judge reliability, shipped as an inline guardrail.</p>
+    </div>
+    <div id="engine" class="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 mono">loading model…</div>
+    <a href="https://github.com/RyanSingh0/judgeguard" target="_blank" rel="noopener"
+       class="text-xs px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50">GitHub ↗</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+
+  <div class="card p-4 bg-amber-50 border-amber-200 text-[12px] leading-relaxed text-amber-900">
+    <strong>This page has no backend.</strong> The distilled guardrail — a logistic model over hashed
+    n-grams with isotonic calibration — is running <em>in your browser</em>, and it is the same model
+    the Python service serves: a parity test asserts agreement with scikit-learn to within 1e-6 on
+    every case. What is <em>not</em> here is the LLM judge path, because a static page cannot hold an
+    API key. Clone the repo to run that half.
+  </div>
+
+  <section>
+    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">What the battery found</h2>
+    <div id="findings" class="grid md:grid-cols-3 gap-4"></div>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-semibold">Try the guardrail</h2>
+        <span class="text-xs text-slate-500">runs locally, no request leaves this page</span>
+      </div>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1">Source document</label>
+      <textarea id="context" rows="7" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 mono focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Question</label>
+      <textarea id="question" rows="2" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Candidate answer</label>
+      <textarea id="answer" rows="7" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <div id="examples" class="flex flex-wrap gap-2 mt-3"></div>
+
+      <button id="btn-guard" class="mt-4 px-4 py-2 rounded-lg bg-[#16202e] text-white text-sm font-medium hover:bg-black">
+        Run inline guardrail
+      </button>
+      <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">
+        An <strong>inline guardrail</strong> blocks bad output before the user sees it and has a hard
+        millisecond budget. An <strong>async evaluator</strong> scores after the fact for dashboards
+        and does not. Confusing the two is a real production failure — so this path contains no
+        network call at all, which is the only way the budget is a promise rather than a hope.
+      </p>
+    </div>
+
+    <div class="space-y-6">
+      <div class="card p-5">
+        <h2 class="font-semibold mb-3">Verdict <span class="text-xs font-normal text-slate-500">client-side inference</span></h2>
+        <div id="guard-out" class="text-sm text-slate-500">Load an example and hit run.</div>
+      </div>
+      <div class="card p-5">
+        <h2 class="font-semibold mb-3">What this guardrail is, honestly</h2>
+        <div id="guard-facts" class="text-[12px] text-slate-600 space-y-1.5"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500">The bias battery</h2>
+      <span class="text-[11px] text-slate-500">click any chart to enlarge · scroll to zoom · drag to pan</span>
+    </div>
+    <div id="figures" class="space-y-4"></div>
+  </section>
+
+  <footer class="text-xs text-slate-500 pt-4 pb-10 border-t border-[#e6e9ee] space-y-1">
+    <p>Every number carries a 95% BCa bootstrap interval. <span id="prov" class="mono"></span></p>
+    <p>
+      <a class="underline hover:text-slate-800" href="https://github.com/RyanSingh0/judgeguard">Code</a> ·
+      <a class="underline hover:text-slate-800" href="https://github.com/RyanSingh0/judgeguard/blob/main/docs/findings.md">Findings</a> ·
+      <a class="underline hover:text-slate-800" href="https://github.com/RyanSingh0/judgeguard/blob/main/docs/methodology.md">Methodology</a> ·
+      <a class="underline hover:text-slate-800" href="https://github.com/RyanSingh0/judgeguard/blob/main/docs/limitations.md">Limitations</a>
+    </p>
+  </footer>
+</main>
+
+<!-- lightbox -->
+<div id="lb" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm select-none">
+  <div class="absolute top-0 inset-x-0 flex items-center gap-3 px-4 py-3 text-white/90 text-xs bg-gradient-to-b from-black/70 to-transparent">
+    <span id="lb-title" class="font-medium truncate"></span>
+    <span id="lb-count" class="text-white/50 mono"></span>
+    <span class="flex-1"></span>
+    <button id="lb-out" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">−</button>
+    <span id="lb-zoom" class="mono w-12 text-center text-white/60">100%</span>
+    <button id="lb-in" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">+</button>
+    <button id="lb-fit" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">fit</button>
+    <a id="lb-open" target="_blank" rel="noopener" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">open PNG ↗</a>
+    <button id="lb-close" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">✕</button>
+  </div>
+  <button id="lb-prev" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white text-4xl px-3 py-6">‹</button>
+  <button id="lb-next" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white text-4xl px-3 py-6">›</button>
+  <div id="lb-stage" class="absolute inset-0 overflow-hidden flex items-center justify-center cursor-grab">
+    <img id="lb-img" class="max-w-none origin-center" draggable="false" alt=""/>
+  </div>
+  <div class="absolute bottom-0 inset-x-0 px-4 py-2.5 text-[11px] text-white/50 text-center bg-gradient-to-t from-black/70 to-transparent">
+    scroll or +/− to zoom · drag to pan · ← → to change chart · Esc to close
+  </div>
+</div>
+
+<script type="module">
+import { BrowserGuard } from "./guard.js";
+
+const $ = (id) => document.getElementById(id);
+const pct = (x, d=1) => (100*x).toFixed(d) + '%';
+const jget = async (u) => (await fetch(u)).json();
+
+let guard = null, summary = null, examples = null, FIGURES = [];
+
+async function boot(){
+  const [model, sum, ex] = await Promise.all([
+    jget('./model.json'), jget('./data/summary.json'), jget('./data/examples.json')
+  ]);
+  guard = new BrowserGuard(model);
+  summary = sum; examples = ex; FIGURES = sum.figures.map(f => [f.file, f.title]);
+
+  const nz = model.members.reduce((a,m) => a + m.coef.i.length, 0);
+  $('engine').textContent = `in-browser · ${model.members.length}×LR + isotonic · ${nz.toLocaleString()} weights`;
+  $('engine').className = 'text-xs px-3 py-1.5 rounded-full mono bg-emerald-100 text-emerald-800';
+  $('prov').textContent = `provenance: ${sum.provenance.mode} · seed ${sum.provenance.seed} · generated ${sum.provenance.generated_at}`;
+
+  $('findings').innerHTML = sum.findings.map((f,i) => `
+    <div class="card p-4">
+      <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Finding ${i+1}</div>
+      <div class="text-sm font-medium leading-snug">${f.headline}</div>
+      <div class="text-xs text-slate-500 mt-2">${f.why}</div>
+    </div>`).join('');
+
+  const g = sum.guardrail;
+  $('guard-facts').innerHTML = `
+    <div>Blocks <strong>${pct(g.bad_output_caught)}</strong> of bad output at
+        <strong>${pct(g.block_precision)}</strong> block precision and a
+        <strong>${pct(g.false_block_rate)}</strong> false-block rate — it never blocked a correct answer.</div>
+    <div>Standalone accuracy <strong>${pct(g.student_accuracy.value)}</strong>
+        [${pct(g.student_accuracy.lo)}, ${pct(g.student_accuracy.hi)}] against the LLM judge's
+        ${pct(g.teacher_accuracy.value)}. The gap is real and concentrated in two classes it is
+        structurally blind to.</div>
+    <div>Calibration error against ground truth <strong>${g.ece_before.toFixed(3)} → ${g.ece_after.toFixed(3)}</strong>,
+        fixed for free because the gold labels are manufactured rather than annotated.</div>
+    <div>Server-side latency p50 <strong>${g.p50_ms.toFixed(1)} ms</strong>,
+        p99 <strong>${g.p99_ms.toFixed(1)} ms</strong> against a ${g.budget_ms.toFixed(0)} ms budget.</div>`;
+
+  $('question').value = ex.question;
+  $('context').value = ex.context;
+  $('answer').value = ex.candidates[0].text;
+  $('examples').innerHTML = ex.candidates.map((c,i) =>
+    `<button data-i="${i}" class="ex text-[11px] px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200">${c.label}</button>`
+  ).join('') + '<div id="ex-note" class="text-[11px] text-slate-500 mt-2 leading-relaxed w-full"></div>';
+  document.querySelectorAll('.ex').forEach(b => b.onclick = () => {
+    const c = ex.candidates[+b.dataset.i];
+    $('answer').value = c.text;
+    $('ex-note').innerHTML = `<strong>expected: ${c.expect}</strong> — ${c.note}`;
+    $('guard-out').innerHTML = '<span class="text-slate-400">hit run</span>';
+  });
+
+  $('figures').innerHTML = FIGURES.map(([f,t],i) => `
+    <figure class="card overflow-hidden group">
+      <button class="fig-open block w-full text-left cursor-zoom-in" data-i="${i}" aria-label="Enlarge: ${t}">
+        <img src="./figures/${f}" alt="${t}" loading="lazy" class="w-full bg-white"
+             onerror="this.closest('figure').remove()"/>
+      </button>
+      <figcaption class="text-xs text-slate-600 px-4 py-2.5 border-t border-[#eef1f4] flex items-center gap-2">
+        <span class="flex-1">${t}</span>
+        <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition">click to enlarge</span>
+        <a href="./figures/${f}" target="_blank" rel="noopener" class="text-[10px] text-slate-400 hover:text-slate-700">PNG ↗</a>
+      </figcaption>
+    </figure>`).join('');
+  document.querySelectorAll('.fig-open').forEach(b => b.onclick = () => openLightbox(+b.dataset.i));
+}
+
+function bar(p, thr){
+  const good = p >= thr;
+  return `<div class="mt-2">
+    <div class="h-2.5 w-full rounded-full bg-slate-200 relative overflow-hidden">
+      <div class="h-full ${good?'bg-emerald-500':'bg-rose-500'}" style="width:${(100*p).toFixed(1)}%"></div>
+      <div class="absolute top-0 bottom-0 w-[2px] bg-slate-800" style="left:${(100*thr).toFixed(1)}%"></div>
+    </div>
+    <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+      <span>p(acceptable) ${p.toFixed(3)}</span><span>threshold ${thr.toFixed(2)}</span>
+    </div></div>`;
+}
+
+$('btn-guard').onclick = () => {
+  if (!guard) return;
+  $('guard-out').innerHTML = '<span class="pulse-dot">scoring…</span>';
+  setTimeout(() => {
+    const d = guard.guard($('context').value, $('question').value, $('answer').value);
+    const ok = d.decision === 'allow';
+    $('guard-out').innerHTML = `
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="px-3 py-1 rounded-full text-xs font-bold ${ok?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${d.decision.toUpperCase()}</span>
+        <span class="mono text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">${d.latency_ms.toFixed(2)} ms in-browser</span>
+      </div>
+      ${bar(d.probability_good, d.threshold)}
+      <div class="text-xs text-slate-600 mt-3">${d.reason}</div>
+      <table class="w-full text-[11px] mt-3 mono text-slate-600">
+        ${Object.entries(d.signals).map(([k,v]) =>
+          `<tr><td class="py-0.5 pr-3 text-slate-400">${k}</td><td class="text-right">${(+v).toFixed(4)}</td></tr>`).join('')}
+      </table>`;
+  }, 10);
+};
+
+/* ---------------------------------------------------------------- lightbox */
+let lbIndex = 0, lbScale = 1, lbX = 0, lbY = 0, lbDrag = null;
+function lbApply(){
+  $('lb-img').style.transform = `translate(${lbX}px, ${lbY}px) scale(${lbScale})`;
+  $('lb-zoom').textContent = Math.round(lbScale*100) + '%';
+}
+function lbFit(){ lbScale = 1; lbX = 0; lbY = 0; lbApply(); }
+function lbZoom(mult, cx, cy){
+  const next = Math.min(8, Math.max(0.4, lbScale * mult));
+  if (cx !== undefined){
+    const r = $('lb-stage').getBoundingClientRect();
+    const dx = cx - (r.left + r.width/2) - lbX, dy = cy - (r.top + r.height/2) - lbY;
+    const k = next/lbScale - 1; lbX -= dx*k; lbY -= dy*k;
+  }
+  lbScale = next; lbApply();
+}
+function showFigure(i){
+  const [f,t] = FIGURES[i];
+  const img = $('lb-img');
+  img.src = './figures/' + f; img.alt = t;
+  $('lb-title').textContent = t;
+  $('lb-count').textContent = `${i+1}/${FIGURES.length}`;
+  $('lb-open').href = './figures/' + f;
+  img.onload = () => {
+    const r = $('lb-stage').getBoundingClientRect();
+    const fit = Math.min((r.width-48)/img.naturalWidth, (r.height-120)/img.naturalHeight);
+    lbScale = Math.max(0.4, Math.min(3, fit)); lbX = 0; lbY = 0; lbApply();
+  };
+}
+function openLightbox(i){
+  lbIndex = i; showFigure(i);
+  $('lb').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+}
+function lbClose(){ $('lb').classList.add('hidden'); document.body.style.overflow = ''; }
+function lbStep(d){ lbIndex = (lbIndex + d + FIGURES.length) % FIGURES.length; showFigure(lbIndex); }
+
+$('lb-close').onclick = lbClose;
+$('lb-fit').onclick = lbFit;
+$('lb-in').onclick = () => lbZoom(1.25);
+$('lb-out').onclick = () => lbZoom(1/1.25);
+$('lb-prev').onclick = () => lbStep(-1);
+$('lb-next').onclick = () => lbStep(1);
+$('lb').onclick = (e) => { if (e.target.id === 'lb' || e.target.id === 'lb-stage') lbClose(); };
+$('lb-stage').addEventListener('wheel', (e) => { e.preventDefault(); lbZoom(e.deltaY<0?1.12:1/1.12, e.clientX, e.clientY); }, {passive:false});
+$('lb-stage').addEventListener('mousedown', (e) => { lbDrag = {x:e.clientX-lbX, y:e.clientY-lbY}; $('lb-stage').style.cursor='grabbing'; });
+window.addEventListener('mousemove', (e) => { if(!lbDrag) return; lbX = e.clientX-lbDrag.x; lbY = e.clientY-lbDrag.y; lbApply(); });
+window.addEventListener('mouseup', () => { lbDrag = null; $('lb-stage').style.cursor='grab'; });
+$('lb-img').ondblclick = (e) => lbZoom(lbScale>1.5 ? 1/lbScale : 2, e.clientX, e.clientY);
+window.addEventListener('keydown', (e) => {
+  if ($('lb').classList.contains('hidden')) return;
+  if (e.key === 'Escape') lbClose();
+  if (e.key === 'ArrowRight') lbStep(1);
+  if (e.key === 'ArrowLeft') lbStep(-1);
+  if (e.key === '+' || e.key === '=') lbZoom(1.25);
+  if (e.key === '-') lbZoom(1/1.25);
+  if (e.key === '0') lbFit();
+});
+
+boot().catch(e => { $('engine').textContent = 'failed to load: ' + e.message; console.error(e); });
+</script>
+</body>
+</html>
