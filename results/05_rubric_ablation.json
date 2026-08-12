@@ -1,0 +1,487 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:31:11+00:00"
+  },
+  "experiment": "05_rubric_ablation",
+  "question": "Does adding rubric structure or chain-of-thought improve discrimination, and is the improvement worth the tokens?",
+  "judges": [
+    "gemini-flash",
+    "llama70b",
+    "qwen27b",
+    "gptoss20b"
+  ],
+  "configs": [
+    "vague",
+    "rubric",
+    "cot"
+  ],
+  "n_items": 400,
+  "accuracy": {
+    "gemini-flash": {
+      "vague": {
+        "value": 0.8666666666666667,
+        "lo": 0.8581666666666665,
+        "hi": 0.8751666666666666,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 1367378,
+        "cost_usd": 0.4242934,
+        "mean_latency_ms": 425.58838545529653
+      },
+      "rubric": {
+        "value": 0.9351666666666667,
+        "lo": 0.9288333333333334,
+        "hi": 0.9411666666666667,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2530572,
+        "cost_usd": 0.9703716,
+        "mean_latency_ms": 503.3721634758468
+      },
+      "cot": {
+        "value": 0.9483333333333334,
+        "lo": 0.9426859545831381,
+        "hi": 0.9538333333333333,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2991372,
+        "cost_usd": 1.6154916,
+        "mean_latency_ms": 703.3875926715474
+      }
+    },
+    "llama70b": {
+      "vague": {
+        "value": 0.7728333333333334,
+        "lo": 0.7621666666666667,
+        "hi": 0.7834999999999999,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 1367378,
+        "cost_usd": 0.80803302,
+        "mean_latency_ms": 212.812244687602
+      },
+      "rubric": {
+        "value": 0.8635,
+        "lo": 0.8548333333333333,
+        "hi": 0.8721666666666666,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2530572,
+        "cost_usd": 1.5122374799999998,
+        "mean_latency_ms": 242.07915456605414
+      },
+      "cot": {
+        "value": 0.8963333333333333,
+        "lo": 0.8883333333333333,
+        "hi": 0.904,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2991372,
+        "cost_usd": 1.83018948,
+        "mean_latency_ms": 317.3369228249311
+      }
+    },
+    "qwen27b": {
+      "vague": {
+        "value": 0.7528333333333334,
+        "lo": 0.7421666666666666,
+        "hi": 0.7636666666666667,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 1367378,
+        "cost_usd": 0.39845962,
+        "mean_latency_ms": 245.58084384345798
+      },
+      "rubric": {
+        "value": 0.845,
+        "lo": 0.8356666666666667,
+        "hi": 0.854,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2530572,
+        "cost_usd": 0.7626658799999999,
+        "mean_latency_ms": 312.4668653032086
+      },
+      "cot": {
+        "value": 0.8796666666666667,
+        "lo": 0.8711666666666666,
+        "hi": 0.8876666666666667,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2991372,
+        "cost_usd": 0.96541788,
+        "mean_latency_ms": 484.4647717189234
+      }
+    },
+    "gptoss20b": {
+      "vague": {
+        "value": 0.6716666666666666,
+        "lo": 0.6596666666666666,
+        "hi": 0.684,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 1367378,
+        "cost_usd": 0.1392978,
+        "mean_latency_ms": 202.48429794607497
+      },
+      "rubric": {
+        "value": 0.7636666666666667,
+        "lo": 0.753,
+        "hi": 0.7745,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2530572,
+        "cost_usd": 0.2914572,
+        "mean_latency_ms": 229.48220433888494
+      },
+      "cot": {
+        "value": 0.8283333333333334,
+        "lo": 0.8188333333333333,
+        "hi": 0.8376666666666668,
+        "n": 6000,
+        "method": "bca",
+        "confidence": 0.95,
+        "total_tokens": 2991372,
+        "cost_usd": 0.4296972,
+        "mean_latency_ms": 298.90539220611066
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "judge": "gemini-flash",
+      "baseline": "vague",
+      "candidate": "rubric",
+      "delta_accuracy": {
+        "diff": 0.0685,
+        "lo": 0.058666666666666645,
+        "hi": 0.07783333333333342,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 663,
+        "c": 252,
+        "statistic": 183.71584699453553,
+        "p_value": 7.484190749438076e-42,
+        "exact": false
+      },
+      "cliffs_delta": 0.0685,
+      "extra_tokens": 1163194,
+      "accuracy_points_per_1k_extra_tokens": 0.005888957473989722,
+      "p_adjusted_holm": 5.238933524606652e-41,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "gemini-flash",
+      "baseline": "vague",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.08166666666666667,
+        "lo": 0.07199999999999995,
+        "hi": 0.09116666666666673,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 704,
+        "c": 214,
+        "statistic": 260.48039215686276,
+        "p_value": 1.3483495304938773e-58,
+        "exact": false
+      },
+      "cliffs_delta": 0.08166666666666667,
+      "extra_tokens": 1623994,
+      "accuracy_points_per_1k_extra_tokens": 0.005028754211325083,
+      "p_adjusted_holm": 1.2135145774444896e-57,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "gemini-flash",
+      "baseline": "rubric",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.01316666666666666,
+        "lo": 0.005833333333333246,
+        "hi": 0.020833333333333263,
+        "p_value": 0.0005,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 309,
+        "c": 230,
+        "statistic": 11.287569573283859,
+        "p_value": 0.0007802776143681314,
+        "exact": false
+      },
+      "cliffs_delta": 0.013166666666666667,
+      "extra_tokens": 460800,
+      "accuracy_points_per_1k_extra_tokens": 0.0028573495370370354,
+      "p_adjusted_holm": 0.0007802776143681314,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "llama70b",
+      "baseline": "vague",
+      "candidate": "rubric",
+      "delta_accuracy": {
+        "diff": 0.09066666666666667,
+        "lo": 0.07800000000000007,
+        "hi": 0.10316666666666663,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1027,
+        "c": 483,
+        "statistic": 195.26423841059602,
+        "p_value": 2.256013647654571e-44,
+        "exact": false
+      },
+      "cliffs_delta": 0.09066666666666667,
+      "extra_tokens": 1163194,
+      "accuracy_points_per_1k_extra_tokens": 0.007794629843918269,
+      "p_adjusted_holm": 1.804810918123657e-43,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "llama70b",
+      "baseline": "vague",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.12349999999999994,
+        "lo": 0.11116666666666675,
+        "hi": 0.13583333333333336,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1108,
+        "c": 367,
+        "statistic": 371.2542372881356,
+        "p_value": 9.979505099468295e-83,
+        "exact": false
+      },
+      "cliffs_delta": 0.1235,
+      "extra_tokens": 1623994,
+      "accuracy_points_per_1k_extra_tokens": 0.007604707899167112,
+      "p_adjusted_holm": 1.0977455609415125e-81,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "llama70b",
+      "baseline": "rubric",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.03283333333333327,
+        "lo": 0.02216250000000004,
+        "hi": 0.04349999999999998,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 632,
+        "c": 435,
+        "statistic": 36.0037488284911,
+        "p_value": 1.969382703962055e-09,
+        "exact": false
+      },
+      "cliffs_delta": 0.03283333333333333,
+      "extra_tokens": 460800,
+      "accuracy_points_per_1k_extra_tokens": 0.0071252893518518375,
+      "p_adjusted_holm": 5.908148111886165e-09,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "qwen27b",
+      "baseline": "vague",
+      "candidate": "rubric",
+      "delta_accuracy": {
+        "diff": 0.09216666666666662,
+        "lo": 0.07883333333333342,
+        "hi": 0.10533333333333328,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1130,
+        "c": 577,
+        "statistic": 178.50263620386644,
+        "p_value": 1.028875848330533e-40,
+        "exact": false
+      },
+      "cliffs_delta": 0.09216666666666666,
+      "extra_tokens": 1163194,
+      "accuracy_points_per_1k_extra_tokens": 0.007923585117071323,
+      "p_adjusted_holm": 6.173255089983198e-40,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "qwen27b",
+      "baseline": "vague",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.12683333333333335,
+        "lo": 0.1140000000000001,
+        "hi": 0.13949999999999996,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1186,
+        "c": 425,
+        "statistic": 358.5350713842334,
+        "p_value": 5.869076002616582e-80,
+        "exact": false
+      },
+      "cliffs_delta": 0.12683333333333333,
+      "extra_tokens": 1623994,
+      "accuracy_points_per_1k_extra_tokens": 0.007809963173098753,
+      "p_adjusted_holm": 5.869076002616582e-79,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "qwen27b",
+      "baseline": "rubric",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.034666666666666734,
+        "lo": 0.023333333333333317,
+        "hi": 0.04616666666666658,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 719,
+        "c": 511,
+        "statistic": 34.83658536585366,
+        "p_value": 3.5857165965001865e-09,
+        "exact": false
+      },
+      "cliffs_delta": 0.034666666666666665,
+      "extra_tokens": 460800,
+      "accuracy_points_per_1k_extra_tokens": 0.0075231481481481625,
+      "p_adjusted_holm": 7.171433193000373e-09,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "gptoss20b",
+      "baseline": "vague",
+      "candidate": "rubric",
+      "delta_accuracy": {
+        "diff": 0.09200000000000008,
+        "lo": 0.07650000000000001,
+        "hi": 0.10733333333333339,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1387,
+        "c": 835,
+        "statistic": 136.63411341134113,
+        "p_value": 1.4498310014947814e-31,
+        "exact": false
+      },
+      "cliffs_delta": 0.092,
+      "extra_tokens": 1163194,
+      "accuracy_points_per_1k_extra_tokens": 0.007909256753387663,
+      "p_adjusted_holm": 7.249155007473907e-31,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "gptoss20b",
+      "baseline": "vague",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.15666666666666673,
+        "lo": 0.14216666666666666,
+        "hi": 0.17133333333333334,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1525,
+        "c": 585,
+        "statistic": 417.8772511848341,
+        "p_value": 7.071155762101522e-93,
+        "exact": false
+      },
+      "cliffs_delta": 0.15666666666666668,
+      "extra_tokens": 1623994,
+      "accuracy_points_per_1k_extra_tokens": 0.009646997874786898,
+      "p_adjusted_holm": 8.485386914521826e-92,
+      "significant_after_correction": true
+    },
+    {
+      "judge": "gptoss20b",
+      "baseline": "rubric",
+      "candidate": "cot",
+      "delta_accuracy": {
+        "diff": 0.06466666666666665,
+        "lo": 0.051166666666666694,
+        "hi": 0.07833333333333337,
+        "p_value": 0.0,
+        "n": 6000,
+        "significant": true
+      },
+      "mcnemar": {
+        "b": 1084,
+        "c": 696,
+        "statistic": 84.13988764044944,
+        "p_value": 4.6097580047441217e-20,
+        "exact": false
+      },
+      "cliffs_delta": 0.06466666666666666,
+      "extra_tokens": 460800,
+      "accuracy_points_per_1k_extra_tokens": 0.014033564814814811,
+      "p_adjusted_holm": 1.8439032018976487e-19,
+      "significant_after_correction": true
+    }
+  ],
+  "multiplicity": {
+    "reject": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "alpha": 0.05,
+    "n_tests": 12,
+    "n_significant": 12
+  }
+}

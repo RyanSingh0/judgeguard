@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JudgeGuard — can you trust the judge?</title>
+<meta name="description" content="Measuring LLM judge reliability with degradation-generated gold labels, then serving the calibrated judge as a sub-150ms inline guardrail."/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { --ink:#16202e; }
+  body { font-feature-settings:"tnum" 1; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card { background:#fff; border:1px solid #e6e9ee; border-radius:14px; }
+  .pulse-dot { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:1} }
+</style>
+</head>
+<body class="bg-[#f6f8fa] text-[#16202e]">
+
+<header class="border-b border-[#e6e9ee] bg-white">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center gap-4">
+    <div class="flex-1 min-w-[260px]">
+      <h1 class="text-2xl font-bold tracking-tight">JudgeGuard</h1>
+      <p class="text-sm text-slate-600">Can you trust the judge? Measured judge reliability, shipped as an inline guardrail.</p>
+    </div>
+    <div id="provenance" class="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 mono">checking…</div>
+    <a href="/docs" class="text-xs px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50">API docs</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+
+  <!-- findings -->
+  <section>
+    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">What the battery found</h2>
+    <div id="findings" class="grid md:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- try it -->
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-semibold">Try it</h2>
+        <span class="text-xs text-slate-500">paste a response, or load an example</span>
+      </div>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1">Question</label>
+      <textarea id="question" rows="2" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Source context <span class="font-normal">(used by the LLM judge only)</span></label>
+      <textarea id="context" rows="3" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Candidate answer</label>
+      <textarea id="answer" rows="7" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+
+      <div id="examples" class="flex flex-wrap gap-2 mt-3"></div>
+
+      <div class="flex flex-wrap gap-2 mt-4">
+        <button id="btn-guard" class="px-4 py-2 rounded-lg bg-[#16202e] text-white text-sm font-medium hover:bg-black">
+          Run inline guardrail
+        </button>
+        <button id="btn-eval" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">
+          Run full LLM judge
+        </button>
+        <select id="judge" class="text-sm px-2 py-2 rounded-lg border border-slate-300"></select>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">
+        The two buttons are not the same product. <strong>Guardrail</strong> is inline: distilled model only,
+        no network call inside the request, hard millisecond budget. <strong>Judge</strong> is asynchronous:
+        a full LLM call, with that judge's measured reliability attached to its score.
+      </p>
+    </div>
+
+    <div class="space-y-6">
+      <div class="card p-5">
+        <h2 class="font-semibold mb-3">Inline guardrail <span class="text-xs font-normal text-slate-500">POST /guard</span></h2>
+        <div id="guard-out" class="text-sm text-slate-500">Nothing run yet.</div>
+      </div>
+      <div class="card p-5">
+        <h2 class="font-semibold mb-3">LLM judge <span class="text-xs font-normal text-slate-500">POST /evaluate</span></h2>
+        <div id="eval-out" class="text-sm text-slate-500">Nothing run yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- figures -->
+  <section>
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500">The bias battery</h2>
+      <span class="text-[11px] text-slate-500">click any chart to enlarge · scroll to zoom · drag to pan</span>
+    </div>
+    <div id="figures" class="space-y-4"></div>
+  </section>
+
+  <!-- lightbox -->
+<div id="lb" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm select-none">
+  <div class="absolute top-0 inset-x-0 flex items-center gap-3 px-4 py-3 text-white/90 text-xs bg-gradient-to-b from-black/70 to-transparent">
+    <span id="lb-title" class="font-medium truncate"></span>
+    <span id="lb-count" class="text-white/50 mono"></span>
+    <span class="flex-1"></span>
+    <button id="lb-out"  class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20" title="Zoom out (-)">−</button>
+    <span id="lb-zoom" class="mono w-12 text-center text-white/60">100%</span>
+    <button id="lb-in"   class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20" title="Zoom in (+)">+</button>
+    <button id="lb-fit"  class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20" title="Reset (0)">fit</button>
+    <a id="lb-open" target="_blank" rel="noopener" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20">open PNG ↗</a>
+    <button id="lb-close" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20" title="Close (Esc)">✕</button>
+  </div>
+  <button id="lb-prev" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white text-4xl px-3 py-6">‹</button>
+  <button id="lb-next" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white text-4xl px-3 py-6">›</button>
+  <div id="lb-stage" class="absolute inset-0 overflow-hidden flex items-center justify-center cursor-grab">
+    <img id="lb-img" class="max-w-none origin-center" draggable="false" alt=""/>
+  </div>
+  <div class="absolute bottom-0 inset-x-0 px-4 py-2.5 text-[11px] text-white/50 text-center bg-gradient-to-t from-black/70 to-transparent">
+    scroll or +/− to zoom · drag to pan · ← → to change chart · Esc to close
+  </div>
+</div>
+
+<footer class="text-xs text-slate-500 pt-4 pb-10 border-t border-[#e6e9ee]">
+    Every number carries a 95% BCa bootstrap interval. Results are served from committed files, so this page
+    renders with no API key. <span id="foot-mode" class="mono"></span>
+  </footer>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const pct = (x, dp=1) => (100*x).toFixed(dp) + '%';
+
+async function jget(url){ const r = await fetch(url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function jpost(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if(!r.ok) throw new Error((await r.text()).slice(0,300));
+  return r.json();
+}
+
+const FIGURES = [
+  ['fig_00_headline.png','Headline: where judges fail'],
+  ['fig_01_discrimination.png','Discrimination vs degradation severity'],
+  ['fig_02_position_bias.png','Position bias and the swap protocol'],
+  ['fig_03_verbosity_bias.png','Verbosity bias, in points'],
+  ['fig_08_trajectory_blindness.png','Agent-trajectory blindness'],
+  ['fig_05_rubric_ablation.png','Does prompt structure buy accuracy?'],
+  ['fig_06_self_consistency.png','Judges vs themselves'],
+  ['fig_07_cost_accuracy.png','Accuracy is not the only axis'],
+  ['fig_09_reliability.png','Student calibration and fidelity'],
+  ['fig_10_latency.png','Guardrail latency vs budget'],
+];
+
+async function boot(){
+  try {
+    const h = await jget('/health');
+    const simulated = h.provider_mode.includes('simulated');
+    $('provenance').textContent = h.provider_mode;
+    $('provenance').className = 'text-xs px-3 py-1.5 rounded-full mono ' +
+      (simulated ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+    $('foot-mode').textContent = h.provider_mode;
+  } catch(e){}
+
+  try {
+    const s = await jget('/summary');
+    $('findings').innerHTML = (s.findings||[]).map((f,i) => `
+      <div class="card p-4">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Finding ${i+1}</div>
+        <div class="text-sm font-medium leading-snug">${f.headline}</div>
+        <div class="text-xs text-slate-500 mt-2">${f.why}</div>
+      </div>`).join('') || '<div class="text-sm text-slate-500">Run the experiments to populate this.</div>';
+  } catch(e){}
+
+  try {
+    const r = await jget('/report');
+    const judges = (r.results['01_discrimination']||{}).judges || ['gemini-flash'];
+    $('judge').innerHTML = judges.map(j => `<option>${j}</option>`).join('');
+  } catch(e){ $('judge').innerHTML = '<option>gemini-flash</option>'; }
+
+  try {
+    const ex = await jget('/examples');
+    $('question').value = ex.question; $('context').value = ex.context;
+    $('answer').value = ex.candidates[0].text;
+    $('examples').innerHTML = ex.candidates.map((c,i) =>
+      `<button data-i="${i}" title="${(c.note||'').replace(/"/g,'&quot;')}" class="ex text-[11px] px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200">${c.label}</button>`).join('')
+      + '<div id="ex-note" class="text-[11px] text-slate-500 mt-2 leading-relaxed w-full"></div>';
+    document.querySelectorAll('.ex').forEach(b => b.onclick = () => {
+      const c = ex.candidates[+b.dataset.i];
+      $('answer').value = c.text;
+      $('ex-note').innerHTML = c.note ? `<strong>expected: ${c.expect}</strong> — ${c.note}` : '';
+    });
+  } catch(e){}
+
+  $('figures').innerHTML = FIGURES.map(([f,t],i) => `
+    <figure class="card overflow-hidden group" data-fig="${i}">
+      <button class="fig-open block w-full text-left cursor-zoom-in" data-i="${i}" aria-label="Enlarge: ${t}">
+        <img src="/figures/${f}" alt="${t}" loading="lazy" class="w-full bg-white"
+             onerror="this.closest('figure').remove()"/>
+      </button>
+      <figcaption class="text-xs text-slate-600 px-4 py-2.5 border-t border-[#eef1f4] flex items-center gap-2">
+        <span class="flex-1">${t}</span>
+        <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition">click to enlarge</span>
+        <a href="/figures/${f}" target="_blank" rel="noopener" class="text-[10px] text-slate-400 hover:text-slate-700">PNG ↗</a>
+      </figcaption>
+    </figure>`).join('');
+  document.querySelectorAll('.fig-open').forEach(b => b.onclick = () => openLightbox(+b.dataset.i));
+}
+
+/* ---------------------------------------------------------------- lightbox
+   The charts are wide (up to 14in) and unreadable in a page-width card, so the
+   gallery is a viewer rather than a thumbnail grid: zoom, pan, keyboard nav. */
+let lbIndex = 0, lbScale = 1, lbX = 0, lbY = 0, lbDrag = null;
+
+function lbApply(){
+  const img = $('lb-img');
+  img.style.transform = `translate(${lbX}px, ${lbY}px) scale(${lbScale})`;
+  $('lb-zoom').textContent = Math.round(lbScale * 100) + '%';
+}
+function lbFit(){ lbScale = 1; lbX = 0; lbY = 0; lbApply(); }
+function lbZoom(mult, cx, cy){
+  const next = Math.min(8, Math.max(0.4, lbScale * mult));
+  if (cx !== undefined) {           // keep the cursor anchored while zooming
+    const r = $('lb-stage').getBoundingClientRect();
+    const dx = cx - (r.left + r.width / 2) - lbX;
+    const dy = cy - (r.top + r.height / 2) - lbY;
+    const k = next / lbScale - 1;
+    lbX -= dx * k; lbY -= dy * k;
+  }
+  lbScale = next; lbApply();
+}
+function openLightbox(i){
+  const visible = FIGURES.filter(([f]) => document.querySelector(`img[src="/figures/${f}"]`));
+  lbIndex = Math.max(0, Math.min(visible.length - 1, i));
+  showFigure(visible, lbIndex);
+  $('lb').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function showFigure(list, i){
+  const [f, t] = list[i];
+  const img = $('lb-img');
+  img.src = '/figures/' + f; img.alt = t;
+  $('lb-title').textContent = t;
+  $('lb-count').textContent = `${i + 1}/${list.length}`;
+  $('lb-open').href = '/figures/' + f;
+  // Start at a scale that fits the stage, so a 14in-wide chart is legible.
+  img.onload = () => {
+    const r = $('lb-stage').getBoundingClientRect();
+    const fit = Math.min((r.width - 48) / img.naturalWidth, (r.height - 120) / img.naturalHeight);
+    lbScale = Math.max(0.4, Math.min(3, fit)); lbX = 0; lbY = 0; lbApply();
+  };
+}
+function lbClose(){
+  $('lb').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+function lbStep(d){
+  const visible = FIGURES.filter(([f]) => document.querySelector(`img[src="/figures/${f}"]`));
+  lbIndex = (lbIndex + d + visible.length) % visible.length;
+  showFigure(visible, lbIndex);
+}
+
+$('lb-close').onclick = lbClose;
+$('lb-fit').onclick = lbFit;
+$('lb-in').onclick  = () => lbZoom(1.25);
+$('lb-out').onclick = () => lbZoom(1 / 1.25);
+$('lb-prev').onclick = () => lbStep(-1);
+$('lb-next').onclick = () => lbStep(1);
+$('lb').onclick = (e) => { if (e.target.id === 'lb' || e.target.id === 'lb-stage') lbClose(); };
+$('lb-stage').addEventListener('wheel', (e) => {
+  e.preventDefault(); lbZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
+}, {passive:false});
+$('lb-stage').addEventListener('mousedown', (e) => {
+  lbDrag = {x: e.clientX - lbX, y: e.clientY - lbY}; $('lb-stage').style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', (e) => {
+  if (!lbDrag) return; lbX = e.clientX - lbDrag.x; lbY = e.clientY - lbDrag.y; lbApply();
+});
+window.addEventListener('mouseup', () => { lbDrag = null; $('lb-stage').style.cursor = 'grab'; });
+$('lb-img').ondblclick = (e) => lbZoom(lbScale > 1.5 ? 1 / lbScale : 2, e.clientX, e.clientY);
+window.addEventListener('keydown', (e) => {
+  if ($('lb').classList.contains('hidden')) return;
+  if (e.key === 'Escape') lbClose();
+  if (e.key === 'ArrowRight') lbStep(1);
+  if (e.key === 'ArrowLeft') lbStep(-1);
+  if (e.key === '+' || e.key === '=') lbZoom(1.25);
+  if (e.key === '-') lbZoom(1 / 1.25);
+  if (e.key === '0') lbFit();
+});
+
+function bar(p, thr){
+  const good = p >= thr;
+  return `<div class="mt-2">
+    <div class="h-2.5 w-full rounded-full bg-slate-200 relative overflow-hidden">
+      <div class="h-full ${good?'bg-emerald-500':'bg-rose-500'}" style="width:${(100*p).toFixed(1)}%"></div>
+      <div class="absolute top-0 bottom-0 w-[2px] bg-slate-800" style="left:${(100*thr).toFixed(1)}%"></div>
+    </div>
+    <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+      <span>p(acceptable) ${p.toFixed(3)}</span><span>threshold ${thr.toFixed(2)}</span>
+    </div></div>`;
+}
+
+$('btn-guard').onclick = async () => {
+  $('guard-out').innerHTML = '<span class="pulse-dot">scoring…</span>';
+  try {
+    const d = await jpost('/guard', {question:$('question').value, answer:$('answer').value});
+    const ok = d.decision === 'allow';
+    $('guard-out').innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="px-3 py-1 rounded-full text-xs font-bold ${ok?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${d.decision.toUpperCase()}</span>
+        <span class="mono text-xs px-2 py-1 rounded ${d.within_budget?'bg-slate-100 text-slate-700':'bg-amber-100 text-amber-800'}">
+          ${d.latency_ms.toFixed(2)} ms / ${d.budget_ms.toFixed(0)} ms budget
+        </span>
+      </div>
+      ${bar(d.probability_good, d.threshold)}
+      <div class="text-xs text-slate-600 mt-3">${d.reason}</div>
+      <table class="w-full text-[11px] mt-3 mono text-slate-600">
+        ${Object.entries(d.signals).map(([k,v]) =>
+          `<tr><td class="py-0.5 pr-3 text-slate-400">${k}</td><td class="text-right">${(+v).toFixed(4)}</td></tr>`).join('')}
+      </table>`;
+  } catch(e){ $('guard-out').innerHTML = `<span class="text-rose-600 text-xs">${e.message}</span>`; }
+};
+
+$('btn-eval').onclick = async () => {
+  $('eval-out').innerHTML = '<span class="pulse-dot">calling the judge…</span>';
+  try {
+    const d = await jpost('/evaluate', {question:$('question').value, context:$('context').value,
+                                        answer:$('answer').value, judge:$('judge').value, config:'cot'});
+    const rel = d.judge_reliability || {};
+    const acc = rel.discrimination_accuracy, weak = rel.weakest_degradation, pos = rel.position_inconsistency_rate;
+    $('eval-out').innerHTML = `
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="text-3xl font-bold">${d.score===null?'—':d.score.toFixed(1)}</span>
+        <span class="text-xs text-slate-500">/ 10 · ${d.judge} · ${d.config}</span>
+        <span class="mono text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">${d.latency_ms.toFixed(0)} ms</span>
+        <span class="mono text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">$${d.cost_usd.toFixed(6)}</span>
+        ${d.simulated?'<span class="mono text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">simulated</span>':''}
+      </div>
+      <pre class="text-[11px] mt-3 p-3 bg-slate-50 rounded-lg whitespace-pre-wrap max-h-52 overflow-auto">${(d.reasoning||'').replace(/</g,'&lt;')}</pre>
+      <div class="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] leading-relaxed">
+        <div class="font-semibold text-amber-900 mb-1">How much should you trust this score?</div>
+        ${acc?`<div>Discrimination accuracy on the battery: <strong>${pct(acc.value)}</strong> [${pct(acc.lo)}, ${pct(acc.hi)}]</div>`:''}
+        ${weak?`<div>Weakest against <strong>${weak.type.replace(/_/g,' ')}</strong>: ${pct(weak.value)}</div>`:''}
+        ${pos?`<div>Changes its verdict on <strong>${pct(pos.value)}</strong> of comparisons when options are swapped</div>`:''}
+      </div>`;
+  } catch(e){ $('eval-out').innerHTML = `<span class="text-rose-600 text-xs">${e.message}</span>`; }
+};
+
+boot();
+</script>
+</body>
+</html>

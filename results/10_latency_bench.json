@@ -1,0 +1,111 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:32:31+00:00"
+  },
+  "experiment": "10_latency_bench",
+  "question": "Does the guardrail path fit inside its latency budget, and what does it trade?",
+  "budget_p99_ms": 150.0,
+  "real_measurement": true,
+  "featurizer": "hashing",
+  "threshold": 0.5,
+  "cpu_count": 2,
+  "serial": {
+    "n": 1200,
+    "mean": 4.0060252467931905,
+    "p50": 3.840799006866291,
+    "p90": 4.730669999844395,
+    "p95": 5.433529004221782,
+    "p99": 7.153437996748835,
+    "max": 10.852260995307006
+  },
+  "concurrency_sweep": {
+    "1": {
+      "n": 300,
+      "mean": 4.0612463996027754,
+      "p50": 3.8769480015616864,
+      "p90": 5.053205997683108,
+      "p95": 5.548564993659966,
+      "p99": 6.114557996625081,
+      "max": 6.952380004804581,
+      "throughput_rps": 243.4454392867112,
+      "within_budget": true
+    },
+    "2": {
+      "n": 300,
+      "mean": 14.024054519832134,
+      "p50": 12.465548992622644,
+      "p90": 22.627653990639374,
+      "p95": 28.45994300150778,
+      "p99": 33.203457001945935,
+      "max": 46.01974500110373,
+      "throughput_rps": 142.15519889723413,
+      "within_budget": true
+    },
+    "4": {
+      "n": 300,
+      "mean": 29.203032993148856,
+      "p50": 21.588755000266246,
+      "p90": 59.377559009590186,
+      "p95": 75.81070500600617,
+      "p99": 118.23885799094569,
+      "max": 152.4429619894363,
+      "throughput_rps": 135.70226239697365,
+      "within_budget": true
+    },
+    "8": {
+      "n": 300,
+      "mean": 57.718961413920624,
+      "p50": 51.86561800655909,
+      "p90": 100.05354200256988,
+      "p95": 116.09540499921422,
+      "p99": 150.80752299400046,
+      "max": 193.33420100156218,
+      "throughput_rps": 135.15872100157821,
+      "within_budget": false
+    },
+    "16": {
+      "n": 300,
+      "mean": 111.1767423399336,
+      "p50": 101.82249199715443,
+      "p90": 200.63712900446262,
+      "p95": 241.27418900025077,
+      "p99": 302.18697000236716,
+      "max": 348.7279630062403,
+      "throughput_rps": 132.76014200992643,
+      "within_budget": false
+    }
+  },
+  "max_concurrency_within_budget": 4,
+  "concurrent_8_workers": {
+    "n": 300,
+    "mean": 57.718961413920624,
+    "p50": 51.86561800655909,
+    "p90": 100.05354200256988,
+    "p95": 116.09540499921422,
+    "p99": 150.80752299400046,
+    "max": 193.33420100156218,
+    "throughput_rps": 135.15872100157821,
+    "within_budget": false
+  },
+  "throughput_rps_at_concurrency": 135.15872100157821,
+  "batched_512_total_ms": 175.03224599931855,
+  "batched_per_item_ms": 0.34185985546741904,
+  "meets_budget_serial": true,
+  "meets_budget_concurrent": false,
+  "headroom_ms": 142.84656200325117,
+  "llm_judge_mean_latency_ms": {
+    "gemini-flash": 703.0348639860507,
+    "llama70b": 316.55249640740396,
+    "qwen27b": 487.7429858086369,
+    "gptoss20b": 299.03777502929995
+  },
+  "speedup_vs_cheapest_judge_serial": 77.85822025435404,
+  "speedup_vs_cheapest_judge_at_concurrency": 5.7656263729756905,
+  "interpretation": "The guardrail path is the distilled student only. No LLM call happens inside the request, which is the only way a hard budget can be honoured. The LLM judge stays available on the async /evaluate path, where latency is a throughput question rather than a user-facing one. The sweep is the deployable result: the budget holds up to concurrency 4 on 2 cores, and past that the queue owns the tail, so the fix is horizontal replicas rather than a smaller model.",
+  "caveat": "Measured on the machine that produced results/. Absolute numbers are hardware dependent; the ratio between the guardrail path and the judge path is not."
+}

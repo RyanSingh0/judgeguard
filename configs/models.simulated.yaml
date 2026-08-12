@@ -1,0 +1,79 @@
+# Pinned model IDs. RULE 1 from the build guide: pin them here, and log the
+# model the provider ACTUALLY served on every call (Completion.model_served).
+# Providers retire models without notice; the experiment record must survive that.
+#
+# `family` is what makes self-enhancement bias measurable: a judge is only
+# "evaluating its own output" if it shares a family with the generator.
+
+providers:
+  gemini:
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    env_key: GEMINI_API_KEY
+    models:
+      - id: gemini-2.0-flash
+        alias: gemini-flash
+        family: gemini
+        tier: frontier
+        usd_per_mtok_in: 0.0        # free tier
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.10  # list price, used for cost-per-correct-judgment
+        list_usd_per_mtok_out: 0.40
+
+  groq:
+    base_url: https://api.groq.com/openai/v1
+    env_key: GROQ_API_KEY
+    models:
+      - id: llama-3.3-70b-versatile
+        alias: llama70b
+        family: llama
+        tier: open-weight
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.59
+        list_usd_per_mtok_out: 0.79
+
+  cerebras:
+    base_url: https://api.cerebras.ai/v1
+    env_key: CEREBRAS_API_KEY
+    models:
+      - id: qwen-3-32b
+        alias: qwen32b
+        family: qwen
+        tier: open-weight
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.40
+        list_usd_per_mtok_out: 0.80
+
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    env_key: OPENROUTER_API_KEY
+    models:
+      - id: mistralai/mistral-small-3.2-24b-instruct:free
+        alias: mistral24b
+        family: mistral
+        tier: open-weight
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.10
+        list_usd_per_mtok_out: 0.30
+
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    env_key: null
+    models:
+      - id: qwen2.5:3b
+        alias: local3b
+        family: qwen
+        tier: local
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.0
+        list_usd_per_mtok_out: 0.0
+
+# The judge panel used by the experiments, in reporting order.
+panel: [gemini-flash, llama70b, qwen32b, mistral24b]
+
+# Response generators for the self-enhancement probe. Deliberately spans
+# families so "own output" is well defined.
+generators: [gemini-flash, llama70b, qwen32b, mistral24b]

@@ -1,0 +1,14 @@
+.venv/
+.git/
+.cache/
+mlruns/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+docs/planning/
+paper/
+tests/
+experiments/
+.github/

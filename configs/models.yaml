@@ -1,0 +1,124 @@
+# Pinned model IDs — VERIFIED LIVE 2026-07-31 against RyanSingh0's accounts.
+#
+# RULE 1 from the build guide, and it earned its place on the first live run:
+# the previous pinned IDs (gemini-2.0-flash, qwen-3-32b, mistral-small-3.2:free)
+# were ALL retired or de-freed between writing and running. Pin them here, and
+# trust `Completion.model_served` over what you asked for.
+#
+# `family` is what makes self-enhancement bias measurable: a judge is only
+# "evaluating its own output" if it shares a family with the generator. The panel
+# below spans four distinct families across three providers.
+#
+# `reasoning: true` means the model emits a visible thinking block and needs a
+# much larger token budget before it will commit to a score. Judged at 128
+# tokens these models return an empty string and look broken; the runner scales
+# their budget instead.
+#
+# !! usd_per_mtok values are LIST-PRICE ESTIMATES and feed only experiment 07.
+# !! Verify them against each provider's pricing page before publishing that
+# !! table. Everything else in the battery is price-independent.
+
+providers:
+  gemini:
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    env_key: GEMINI_API_KEY
+    models:
+      - id: gemini-3.6-flash
+        alias: gemini-flash
+        family: gemini
+        tier: frontier
+        reasoning: true          # spends tokens before committing to a score
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.30
+        list_usd_per_mtok_out: 2.50
+      # Verified working failover: served as gemini-3.5-flash-lite, ~600 ms.
+      - id: gemini-flash-lite-latest
+        alias: gemini-lite
+        family: gemini
+        tier: frontier
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.10
+        list_usd_per_mtok_out: 0.40
+
+  groq:
+    base_url: https://api.groq.com/openai/v1
+    env_key: GROQ_API_KEY
+    models:
+      - id: llama-3.3-70b-versatile
+        alias: llama70b
+        family: llama
+        tier: open-weight
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.59
+        list_usd_per_mtok_out: 0.79
+      - id: qwen/qwen3.6-27b
+        alias: qwen27b
+        family: qwen
+        tier: open-weight
+        reasoning: true          # long <think> block; needs ~512 tokens
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.29
+        list_usd_per_mtok_out: 0.59
+      - id: openai/gpt-oss-20b
+        alias: gptoss20b
+        family: gpt-oss
+        tier: open-weight
+        reasoning: true
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.10
+        list_usd_per_mtok_out: 0.50
+
+  cerebras:
+    # NOTE: this account returns 402 "Payment required" on every model as of
+    # 2026-07-31. Kept configured but OUT of the panel. Add billing, or swap an
+    # alias in here, and it rejoins with no code change.
+    base_url: https://api.cerebras.ai/v1
+    env_key: CEREBRAS_API_KEY
+    models:
+      - id: zai-glm-4.7
+        alias: glm47
+        family: glm
+        tier: open-weight
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.35
+        list_usd_per_mtok_out: 0.95
+
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    env_key: OPENROUTER_API_KEY
+    models:
+      - id: nvidia/nemotron-nano-9b-v2:free
+        alias: nemotron9b
+        family: nemotron
+        tier: open-weight
+        reasoning: true
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.04
+        list_usd_per_mtok_out: 0.16
+
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    env_key: null
+    models:
+      - id: qwen2.5:3b
+        alias: local3b
+        family: qwen
+        tier: local
+        usd_per_mtok_in: 0.0
+        usd_per_mtok_out: 0.0
+        list_usd_per_mtok_in: 0.0
+        list_usd_per_mtok_out: 0.0
+
+# The judge panel, in reporting order. Four distinct families, three providers.
+panel: [gemini-flash, llama70b, qwen27b, gptoss20b]
+
+# Response generators for the self-enhancement probe. Same set: each judge must
+# see output from its own family and from three others.
+generators: [gemini-flash, llama70b, qwen27b, gptoss20b]

@@ -1,0 +1,154 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:56:40+00:00"
+  },
+  "gate": "regression_suite",
+  "passed": true,
+  "thresholds": {
+    "fail_under": 0.7,
+    "max_ece": 0.15,
+    "p99_budget_ms": 150.0
+  },
+  "measurements": {
+    "accuracy": 0.7708333333333334,
+    "block_precision": 1.0,
+    "false_block_rate": 0.0,
+    "bad_output_caught": 0.5416666666666666,
+    "ece": 0.01570903193437445,
+    "p99_ms": 5.543375913548516
+  },
+  "checks": [
+    {
+      "name": "corpus is non-degenerate",
+      "passed": true,
+      "observed": "120 unique / 120",
+      "expected": "all distinct",
+      "gating": true
+    },
+    {
+      "name": "every variant carries an audit trail",
+      "passed": true,
+      "observed": "all",
+      "expected": "non-empty edit description",
+      "gating": true
+    },
+    {
+      "name": "verbosity probe introduces no error",
+      "passed": true,
+      "observed": "360 probe variants",
+      "expected": "only the verbosity probe",
+      "gating": true
+    },
+    {
+      "name": "error variants differ from their reference",
+      "passed": true,
+      "observed": "all differ",
+      "expected": "no accidental no-ops",
+      "gating": true
+    },
+    {
+      "name": "degradation set complete",
+      "passed": true,
+      "observed": 6,
+      "expected": "6 types",
+      "gating": true
+    },
+    {
+      "name": "guardrail accuracy vs ground truth",
+      "passed": true,
+      "observed": "0.7708",
+      "expected": ">= 0.7",
+      "gating": true
+    },
+    {
+      "name": "guardrail block precision",
+      "passed": true,
+      "observed": "1.0000",
+      "expected": ">= 0.90",
+      "gating": true
+    },
+    {
+      "name": "guardrail false-block rate",
+      "passed": true,
+      "observed": "0.0000",
+      "expected": "<= 0.05",
+      "gating": true
+    },
+    {
+      "name": "guardrail catches bad output",
+      "passed": true,
+      "observed": "0.5417",
+      "expected": ">= 0.35",
+      "gating": true
+    },
+    {
+      "name": "guardrail calibration error",
+      "passed": true,
+      "observed": "0.0157",
+      "expected": "<= 0.15",
+      "gating": true
+    },
+    {
+      "name": "documented blind spot: numeric_swap",
+      "passed": true,
+      "observed": "0.0000 detected",
+      "expected": "<= 0.25 (documented as structural)",
+      "gating": true
+    },
+    {
+      "name": "documented blind spot: topic_drift",
+      "passed": true,
+      "observed": "0.0000 detected",
+      "expected": "<= 0.25 (documented as structural)",
+      "gating": true
+    },
+    {
+      "name": "guardrail p99 latency",
+      "passed": true,
+      "observed": "5.54 ms",
+      "expected": "<= 150 ms",
+      "gating": true
+    },
+    {
+      "name": "CI reported for gemini-flash",
+      "passed": true,
+      "observed": "[0.949, 0.958]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for llama70b",
+      "passed": true,
+      "observed": "[0.887, 0.902]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for qwen27b",
+      "passed": true,
+      "observed": "[0.873, 0.888]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for gptoss20b",
+      "passed": true,
+      "observed": "[0.808, 0.826]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "argument-blindness finding present",
+      "passed": true,
+      "observed": "0.644 miss rate (gptoss20b)",
+      "expected": "> 0",
+      "gating": true
+    }
+  ],
+  "seconds": 0.854461041992181
+}

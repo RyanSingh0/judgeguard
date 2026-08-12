@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+mlruns/
+*.egg-info/
+dist/
+build/
+.DS_Store
+.ipynb_checkpoints/
+# results/ IS committed on purpose: the README and /report must render
+# without an API key. Only raw provider dumps are ignored.
+results/raw/
+results/_smoke/

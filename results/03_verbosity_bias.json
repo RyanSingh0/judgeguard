@@ -1,0 +1,851 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:27:48+00:00"
+  },
+  "experiment": "03_verbosity_bias",
+  "question": "Does padding a CORRECT answer with content-free filler raise its score?",
+  "control": "The padded text is the unmodified reference plus filler. Correct delta is 0.",
+  "judges": [
+    "gemini-flash",
+    "llama70b",
+    "qwen27b",
+    "gptoss20b"
+  ],
+  "configs": [
+    "vague",
+    "rubric",
+    "cot"
+  ],
+  "n_items": 500,
+  "per_judge": {
+    "gemini-flash": {
+      "vague": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.4812000000000012,
+            "lo": 0.42680000000000184,
+            "hi": 0.5348000000000006,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.49710363784409217,
+          "share_scored_higher": {
+            "value": 0.768,
+            "lo": 0.73,
+            "hi": 0.804,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.6618,
+          "reference_mean_score": 8.1806
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.6517999999999997,
+            "lo": 0.5997949999999984,
+            "hi": 0.7051999999999996,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.434128262722329,
+          "share_scored_higher": {
+            "value": 0.826,
+            "lo": 0.792,
+            "hi": 0.8580000000000001,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8324,
+          "reference_mean_score": 8.1806
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.8199999999999985,
+            "lo": 0.7635999999999985,
+            "hi": 0.8755999999999986,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.38990444202914953,
+          "share_scored_higher": {
+            "value": 0.876,
+            "lo": 0.844,
+            "hi": 0.902,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.0006,
+          "reference_mean_score": 8.1806
+        }
+      },
+      "rubric": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.3368000000000002,
+            "lo": 0.29459499999999744,
+            "hi": 0.37940500000000205,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.3479312244927056,
+          "share_scored_higher": {
+            "value": 0.72,
+            "lo": 0.6800000000000002,
+            "hi": 0.758,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.5338,
+          "reference_mean_score": 8.197
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.45720000000000205,
+            "lo": 0.4144000000000005,
+            "hi": 0.49959999999999916,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.3045158663955965,
+          "share_scored_higher": {
+            "value": 0.808,
+            "lo": 0.772,
+            "hi": 0.842,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.654200000000001,
+          "reference_mean_score": 8.197
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.5768000000000022,
+            "lo": 0.5373999999999999,
+            "hi": 0.6168000000000013,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.27426449044196916,
+          "share_scored_higher": {
+            "value": 0.854,
+            "lo": 0.822,
+            "hi": 0.882,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.7738,
+          "reference_mean_score": 8.197
+        }
+      },
+      "cot": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.27859999999999907,
+            "lo": 0.24520000000000053,
+            "hi": 0.31139999999999907,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.2878077171724091,
+          "share_scored_higher": {
+            "value": 0.724,
+            "lo": 0.6840000000000002,
+            "hi": 0.762,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.484399999999999,
+          "reference_mean_score": 8.2058
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.3791999999999991,
+            "lo": 0.3461999999999996,
+            "hi": 0.41240500000000146,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.2525643406325665,
+          "share_scored_higher": {
+            "value": 0.81,
+            "lo": 0.774,
+            "hi": 0.842,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.585,
+          "reference_mean_score": 8.2058
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.45039999999999836,
+            "lo": 0.4161999999999981,
+            "hi": 0.4850000000000012,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.21416214718283977,
+          "share_scored_higher": {
+            "value": 0.85,
+            "lo": 0.816,
+            "hi": 0.8779999999999999,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.6562,
+          "reference_mean_score": 8.2058
+        }
+      }
+    },
+    "llama70b": {
+      "vague": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.7767999999999979,
+            "lo": 0.7059999999999995,
+            "hi": 0.8490000000000002,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.8024732042337673,
+          "share_scored_higher": {
+            "value": 0.804,
+            "lo": 0.768,
+            "hi": 0.838,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.029399999999999,
+          "reference_mean_score": 8.252600000000001
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 1.0391999999999975,
+            "lo": 0.970600000000001,
+            "hi": 1.107405000000002,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.6921541740120335,
+          "share_scored_higher": {
+            "value": 0.884,
+            "lo": 0.8539999999999999,
+            "hi": 0.91,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.291799999999999,
+          "reference_mean_score": 8.252600000000001
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 1.2579999999999991,
+            "lo": 1.191600000000001,
+            "hi": 1.3233999999999995,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5981704732593545,
+          "share_scored_higher": {
+            "value": 0.94,
+            "lo": 0.916,
+            "hi": 0.958,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.5106,
+          "reference_mean_score": 8.252600000000001
+        }
+      },
+      "rubric": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.6108000000000011,
+            "lo": 0.5538000000000007,
+            "hi": 0.6671999999999993,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.6309869118769146,
+          "share_scored_higher": {
+            "value": 0.81,
+            "lo": 0.774,
+            "hi": 0.8428365276725163,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8316,
+          "reference_mean_score": 8.220799999999999
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.7964000000000002,
+            "lo": 0.7379949999999996,
+            "hi": 0.8564000000000007,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5304383989445582,
+          "share_scored_higher": {
+            "value": 0.866,
+            "lo": 0.834,
+            "hi": 0.894,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.0172,
+          "reference_mean_score": 8.220799999999999
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.9415999999999993,
+            "lo": 0.8870000000000005,
+            "hi": 0.998800000000001,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.44772441782274097,
+          "share_scored_higher": {
+            "value": 0.922,
+            "lo": 0.896,
+            "hi": 0.944,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.1624,
+          "reference_mean_score": 8.220799999999999
+        }
+      },
+      "cot": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.5179999999999989,
+            "lo": 0.46579999999999977,
+            "hi": 0.5700000000000003,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.535119876149706,
+          "share_scored_higher": {
+            "value": 0.784,
+            "lo": 0.746,
+            "hi": 0.818,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.698799999999999,
+          "reference_mean_score": 8.1808
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.6644000000000005,
+            "lo": 0.6166,
+            "hi": 0.7121999999999993,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.4425204322686649,
+          "share_scored_higher": {
+            "value": 0.87,
+            "lo": 0.838,
+            "hi": 0.8980000000000001,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8452,
+          "reference_mean_score": 8.1808
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.847999999999999,
+            "lo": 0.8017999999999983,
+            "hi": 0.8950050000000047,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.40321825224477925,
+          "share_scored_higher": {
+            "value": 0.93,
+            "lo": 0.904377721301963,
+            "hi": 0.95,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.028799999999999,
+          "reference_mean_score": 8.1808
+        }
+      }
+    },
+    "qwen27b": {
+      "vague": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.7698,
+            "lo": 0.6923949999999993,
+            "hi": 0.8461999999999996,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.7952418545560707,
+          "share_scored_higher": {
+            "value": 0.808,
+            "lo": 0.772,
+            "hi": 0.84,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.924,
+          "reference_mean_score": 8.1542
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 1.0252,
+            "lo": 0.9510000000000005,
+            "hi": 1.0994050000000009,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.6828295411827736,
+          "share_scored_higher": {
+            "value": 0.886,
+            "lo": 0.856,
+            "hi": 0.9119999999999999,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.1794,
+          "reference_mean_score": 8.1542
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 1.2418000000000013,
+            "lo": 1.1671950000000029,
+            "hi": 1.3165999999999976,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5904674830631699,
+          "share_scored_higher": {
+            "value": 0.912,
+            "lo": 0.8859495052023648,
+            "hi": 0.9360000000000002,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.396,
+          "reference_mean_score": 8.1542
+        }
+      },
+      "rubric": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.5644000000000009,
+            "lo": 0.5040000000000031,
+            "hi": 0.6248050000000022,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5830533940133112,
+          "share_scored_higher": {
+            "value": 0.778,
+            "lo": 0.74,
+            "hi": 0.812,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.7594,
+          "reference_mean_score": 8.195
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.7309999999999999,
+            "lo": 0.6696000000000009,
+            "hi": 0.7911999999999999,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.4868790427278653,
+          "share_scored_higher": {
+            "value": 0.846,
+            "lo": 0.812,
+            "hi": 0.876,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.926,
+          "reference_mean_score": 8.195
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.8889999999999993,
+            "lo": 0.8321949999999969,
+            "hi": 0.9459999999999981,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.42271347434623696,
+          "share_scored_higher": {
+            "value": 0.9,
+            "lo": 0.872,
+            "hi": 0.924,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.084,
+          "reference_mean_score": 8.195
+        }
+      },
+      "cot": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.4659999999999975,
+            "lo": 0.4147999999999996,
+            "hi": 0.5180050000000024,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.48140127854394255,
+          "share_scored_higher": {
+            "value": 0.762,
+            "lo": 0.722,
+            "hi": 0.798,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.6456,
+          "reference_mean_score": 8.1796
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.6407999999999987,
+            "lo": 0.590799999999998,
+            "hi": 0.6918050000000006,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.4268017654993372,
+          "share_scored_higher": {
+            "value": 0.866,
+            "lo": 0.834,
+            "hi": 0.894,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8204,
+          "reference_mean_score": 8.1796
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.7129999999999992,
+            "lo": 0.6620000000000008,
+            "hi": 0.7632050000000011,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.3390266672765656,
+          "share_scored_higher": {
+            "value": 0.878,
+            "lo": 0.848,
+            "hi": 0.904,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8926,
+          "reference_mean_score": 8.1796
+        }
+      }
+    },
+    "gptoss20b": {
+      "vague": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.9249999999999972,
+            "lo": 0.8327999999999989,
+            "hi": 1.0166000000000004,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.9555712074101885,
+          "share_scored_higher": {
+            "value": 0.802,
+            "lo": 0.764,
+            "hi": 0.836,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.130799999999999,
+          "reference_mean_score": 8.2058
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 1.2121999999999975,
+            "lo": 1.1219899999999983,
+            "hi": 1.3034,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.8073799939736214,
+          "share_scored_higher": {
+            "value": 0.846,
+            "lo": 0.812,
+            "hi": 0.876,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.418,
+          "reference_mean_score": 8.2058
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 1.4453999999999994,
+            "lo": 1.3602000000000007,
+            "hi": 1.5272000000000006,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.687277903059675,
+          "share_scored_higher": {
+            "value": 0.904,
+            "lo": 0.8759999999999999,
+            "hi": 0.928,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.651200000000001,
+          "reference_mean_score": 8.2058
+        }
+      },
+      "rubric": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.6870000000000029,
+            "lo": 0.6151999999999997,
+            "hi": 0.7590000000000003,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.7097053183684371,
+          "share_scored_higher": {
+            "value": 0.776,
+            "lo": 0.738,
+            "hi": 0.812,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.9268,
+          "reference_mean_score": 8.239799999999999
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.9466000000000001,
+            "lo": 0.8754000000000008,
+            "hi": 1.017005000000001,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.6304783882984917,
+          "share_scored_higher": {
+            "value": 0.858,
+            "lo": 0.826,
+            "hi": 0.8860000000000001,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.186399999999999,
+          "reference_mean_score": 8.239799999999999
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 1.1974000000000018,
+            "lo": 1.1300000000000026,
+            "hi": 1.2672050000000006,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5693555840069575,
+          "share_scored_higher": {
+            "value": 0.918,
+            "lo": 0.892,
+            "hi": 0.94,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.4372,
+          "reference_mean_score": 8.239799999999999
+        }
+      },
+      "cot": {
+        "0.2": {
+          "mean_length_ratio": 1.9680073999999999,
+          "delta_points": {
+            "diff": 0.6843999999999983,
+            "lo": 0.6204000000000018,
+            "hi": 0.7462,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.7070193884881443,
+          "share_scored_higher": {
+            "value": 0.806,
+            "lo": 0.768,
+            "hi": 0.84,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 8.8786,
+          "reference_mean_score": 8.1942
+        },
+        "0.5": {
+          "mean_length_ratio": 2.5013996,
+          "delta_points": {
+            "diff": 0.8742000000000001,
+            "lo": 0.8122000000000007,
+            "hi": 0.9361999999999977,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.5822567156671682,
+          "share_scored_higher": {
+            "value": 0.892,
+            "lo": 0.862,
+            "hi": 0.916,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.0684,
+          "reference_mean_score": 8.1942
+        },
+        "0.9": {
+          "mean_length_ratio": 3.1030794,
+          "delta_points": {
+            "diff": 0.9984000000000002,
+            "lo": 0.9383949999999998,
+            "hi": 1.0572,
+            "p_value": 0.0,
+            "n": 500,
+            "significant": true
+          },
+          "points_per_doubling": 0.47473243283158983,
+          "share_scored_higher": {
+            "value": 0.922,
+            "lo": 0.896,
+            "hi": 0.942,
+            "n": 500,
+            "method": "bca",
+            "confidence": 0.95
+          },
+          "padded_mean_score": 9.1926,
+          "reference_mean_score": 8.1942
+        }
+      }
+    }
+  }
+}

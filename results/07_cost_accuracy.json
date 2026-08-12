@@ -1,0 +1,237 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:31:49+00:00"
+  },
+  "experiment": "07_cost_accuracy",
+  "question": "What does each accuracy point actually cost, in dollars and in milliseconds?",
+  "pricing_note": "All calls ran on free tiers. Costs use each provider's published list price so the comparison is meaningful; free-tier cost would be $0 for every row.",
+  "rows": [
+    {
+      "judge": "gemini-flash",
+      "provider": "gemini",
+      "family": "gemini",
+      "tier": "frontier",
+      "accuracy": {
+        "value": 0.9537333333333333,
+        "lo": 0.9488145410078134,
+        "hi": 0.9584,
+        "n": 7500,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "total_cost_usd_list_price": 2.0196321,
+      "cost_per_1k_judgments_usd": 0.26928428,
+      "cost_per_correct_judgment_usd": 0.00028234756046414093,
+      "mean_latency_ms": 703.0348639860507,
+      "judgments_per_second_single_stream": 1.4224045651594337,
+      "accuracy_per_dollar": 0.47223122138598084
+    },
+    {
+      "judge": "llama70b",
+      "provider": "groq",
+      "family": "llama",
+      "tier": "open-weight",
+      "accuracy": {
+        "value": 0.8946666666666667,
+        "lo": 0.8874666666666666,
+        "hi": 0.9016,
+        "n": 7500,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "total_cost_usd_list_price": 2.28826313,
+      "cost_per_1k_judgments_usd": 0.3051017506666666,
+      "cost_per_correct_judgment_usd": 0.0003410228211624441,
+      "mean_latency_ms": 316.55249640740396,
+      "judgments_per_second_single_stream": 3.159033687458263,
+      "accuracy_per_dollar": 0.3909806765390075
+    },
+    {
+      "judge": "qwen27b",
+      "provider": "groq",
+      "family": "qwen",
+      "tier": "open-weight",
+      "accuracy": {
+        "value": 0.8808,
+        "lo": 0.8734666666666666,
+        "hi": 0.8881333333333333,
+        "n": 7500,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "total_cost_usd_list_price": 1.20703103,
+      "cost_per_1k_judgments_usd": 0.1609374706666667,
+      "cost_per_correct_judgment_usd": 0.00018271738268240992,
+      "mean_latency_ms": 487.7429858086369,
+      "judgments_per_second_single_stream": 2.0502601351449146,
+      "accuracy_per_dollar": 0.7297244048481505
+    },
+    {
+      "judge": "gptoss20b",
+      "provider": "groq",
+      "family": "gpt-oss",
+      "tier": "open-weight",
+      "accuracy": {
+        "value": 0.8168,
+        "lo": 0.8081333333333334,
+        "hi": 0.8256,
+        "n": 7500,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "total_cost_usd_list_price": 0.5372107,
+      "cost_per_1k_judgments_usd": 0.07162809333333335,
+      "cost_per_correct_judgment_usd": 8.769355207313092e-05,
+      "mean_latency_ms": 299.03777502929995,
+      "judgments_per_second_single_stream": 3.344059123975288,
+      "accuracy_per_dollar": 1.5204462606571312
+    }
+  ],
+  "pareto_frontier": [
+    "gptoss20b",
+    "qwen27b",
+    "gemini-flash"
+  ],
+  "headline": {
+    "frontier_judge": "gemini-flash",
+    "best_open_weight_judge": "llama70b",
+    "accuracy_retained_pct": 93.80679435202013,
+    "accuracy_gap": {
+      "diff": -0.0590666666666666,
+      "lo": -0.0669333333333334,
+      "hi": -0.051063333333333315,
+      "p_value": 0.0,
+      "n": 7500,
+      "significant": true
+    },
+    "open_cost_over_frontier_cost": 1.1330098833346924,
+    "cheapest_per_correct_judgment": "gptoss20b",
+    "latency_ratio_frontier_over_open": 2.2209108187895725,
+    "sentence": "llama70b retained 93.8% of gemini-flash's discrimination accuracy while costing 1.1x as much per 1k judgments at list prices",
+    "note": "The open-weight cost advantage that motivates most judge-selection advice does not survive contact with 2026 list prices. Whichever way this lands, no LLM judge in the panel is cheap enough or fast enough to run inline -- which is the argument for distillation, not for picking a different judge."
+  },
+  "swap_protocol_economics": {
+    "gemini-flash": {
+      "extra_calls_multiplier": 2,
+      "accuracy_gain_over_single_call": {
+        "diff": -0.040000000000000036,
+        "lo": -0.04613333333333336,
+        "hi": -0.03386666666666671,
+        "p_value": 0.0,
+        "n": 3750,
+        "significant": true
+      },
+      "inconsistency_rate": {
+        "value": 0.116,
+        "lo": 0.10586666666666666,
+        "hi": 0.1264,
+        "n": 3750,
+        "method": "bca",
+        "confidence": 0.95
+      }
+    },
+    "llama70b": {
+      "extra_calls_multiplier": 2,
+      "accuracy_gain_over_single_call": {
+        "diff": -0.08560000000000001,
+        "lo": -0.09493333333333331,
+        "hi": -0.07679999999999998,
+        "p_value": 0.0,
+        "n": 3750,
+        "significant": true
+      },
+      "inconsistency_rate": {
+        "value": 0.22426666666666667,
+        "lo": 0.2112,
+        "hi": 0.23786666666666667,
+        "n": 3750,
+        "method": "bca",
+        "confidence": 0.95
+      }
+    },
+    "qwen27b": {
+      "extra_calls_multiplier": 2,
+      "accuracy_gain_over_single_call": {
+        "diff": -0.07253333333333334,
+        "lo": -0.08106666666666662,
+        "hi": -0.0642666666666667,
+        "p_value": 0.0,
+        "n": 3750,
+        "significant": true
+      },
+      "inconsistency_rate": {
+        "value": 0.21146666666666666,
+        "lo": 0.19866666666666666,
+        "hi": 0.2250666666666667,
+        "n": 3750,
+        "method": "bca",
+        "confidence": 0.95
+      }
+    },
+    "gptoss20b": {
+      "extra_calls_multiplier": 2,
+      "accuracy_gain_over_single_call": {
+        "diff": -0.13306666666666667,
+        "lo": -0.14400000000000002,
+        "hi": -0.12239999999999995,
+        "p_value": 0.0,
+        "n": 3750,
+        "significant": true
+      },
+      "inconsistency_rate": {
+        "value": 0.3234666666666667,
+        "lo": 0.3082666666666667,
+        "hi": 0.33813333333333334,
+        "n": 3750,
+        "method": "bca",
+        "confidence": 0.95
+      }
+    }
+  },
+  "accuracy_ci_note": "Accuracy intervals are the BCa intervals from 01_discrimination.",
+  "n_pairs": {
+    "gemini-flash": 7500,
+    "llama70b": 7500,
+    "qwen27b": 7500,
+    "gptoss20b": 7500
+  },
+  "sanity": {
+    "gemini-flash": {
+      "value": 0.9537333333333333,
+      "lo": 0.9488145410078134,
+      "hi": 0.9584,
+      "n": 7500,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "llama70b": {
+      "value": 0.8946666666666667,
+      "lo": 0.8874666666666666,
+      "hi": 0.9016,
+      "n": 7500,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "qwen27b": {
+      "value": 0.8808,
+      "lo": 0.8734666666666666,
+      "hi": 0.8881333333333333,
+      "n": 7500,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "gptoss20b": {
+      "value": 0.8168,
+      "lo": 0.8081333333333334,
+      "hi": 0.8256,
+      "n": 7500,
+      "method": "bca",
+      "confidence": 0.95
+    }
+  }
+}

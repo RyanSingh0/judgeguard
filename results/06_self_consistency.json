@@ -1,0 +1,124 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:31:43+00:00"
+  },
+  "experiment": "06_self_consistency",
+  "question": "Run the same judge five times on the same item. How often does it disagree with itself?",
+  "config": "rubric",
+  "judges": [
+    "gemini-flash",
+    "llama70b",
+    "qwen27b",
+    "gptoss20b"
+  ],
+  "n_items": 200,
+  "n_pairs": 3000,
+  "per_judge": {
+    "gemini-flash": {
+      "replicates": 5,
+      "temperature": 0.7,
+      "krippendorff_alpha": 0.5449040039884834,
+      "mean_pairwise_kappa": 0.5448890392755591,
+      "verdict_flip_rate": {
+        "value": 0.546,
+        "lo": 0.528,
+        "hi": 0.564,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "accept_reject_flip_rate": {
+        "value": 0.387,
+        "lo": 0.36933333333333335,
+        "hi": 0.4043333333333333,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "two_run_decision_disagreement": 0.192,
+      "mean_score_sd": 0.4178169655430024,
+      "max_score_sd": 1.0533755265810953
+    },
+    "llama70b": {
+      "replicates": 5,
+      "temperature": 0.7,
+      "krippendorff_alpha": 0.4169446796974082,
+      "mean_pairwise_kappa": 0.4169364164488082,
+      "verdict_flip_rate": {
+        "value": 0.6686666666666666,
+        "lo": 0.6513333333333333,
+        "hi": 0.685,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "accept_reject_flip_rate": {
+        "value": 0.527,
+        "lo": 0.5093333333333333,
+        "hi": 0.5446666666666666,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "two_run_decision_disagreement": 0.25453333333333333,
+      "mean_score_sd": 0.5620827987769829,
+      "max_score_sd": 1.6916264363032405
+    },
+    "qwen27b": {
+      "replicates": 5,
+      "temperature": 0.7,
+      "krippendorff_alpha": 0.34394825979773214,
+      "mean_pairwise_kappa": 0.34393678604525724,
+      "verdict_flip_rate": {
+        "value": 0.726,
+        "lo": 0.7093333333333334,
+        "hi": 0.742,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "accept_reject_flip_rate": {
+        "value": 0.57,
+        "lo": 0.5516666666666666,
+        "hi": 0.5873333333333334,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "two_run_decision_disagreement": 0.274,
+      "mean_score_sd": 0.6070342828830414,
+      "max_score_sd": 1.5067846561469889
+    },
+    "gptoss20b": {
+      "replicates": 5,
+      "temperature": 0.7,
+      "krippendorff_alpha": 0.1820476480260187,
+      "mean_pairwise_kappa": 0.18203897892280768,
+      "verdict_flip_rate": {
+        "value": 0.8496666666666667,
+        "lo": 0.8366666666666667,
+        "hi": 0.862,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "accept_reject_flip_rate": {
+        "value": 0.6456666666666667,
+        "lo": 0.6286666666666667,
+        "hi": 0.6623333333333333,
+        "n": 3000,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "two_run_decision_disagreement": 0.315,
+      "mean_score_sd": 0.7566487219598315,
+      "max_score_sd": 1.9308029417835475
+    }
+  },
+  "interpretation": "The two-run disagreement rate is the noise floor for every other comparison in the battery: an accuracy gap narrower than this is not measurable with one run."
+}

@@ -1,0 +1,518 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "nogit",
+    "python": "3.12.13",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "generated_at": "2026-08-11T18:32:13+00:00"
+  },
+  "experiment": "09_distill",
+  "question": "How much of the teacher survives compression, and what does that buy?",
+  "teacher": {
+    "judge": "gemini-flash",
+    "config": "cot",
+    "accept_threshold_on_1_10_scale": 7.0,
+    "labels_generated": 1000
+  },
+  "student": {
+    "featurizer": "hashing",
+    "n_train": 600,
+    "n_calibration": 200,
+    "n_test": 200,
+    "accuracy": 0.77,
+    "auc": 0.8077343370568236,
+    "brier": 0.15833069562857943,
+    "ece": 0.04023432400175548,
+    "ece_vs_truth_before": 0.19303570398014122,
+    "ece_vs_truth_after": 0.01453265650306751,
+    "log_loss": 0.4599041217401165,
+    "agreement_with_teacher": 0.88,
+    "recalibrated": true,
+    "fit_seconds": 0.5139695899997605,
+    "inference_ms_mean": 5.124642373023865,
+    "inference_ms_p95": 7.23800776322605
+  },
+  "operating_point": {
+    "threshold": 0.5,
+    "block_precision": 1.0,
+    "false_block_rate": 0.0,
+    "bad_output_caught": 0.5306122448979592,
+    "chosen_by": "most permissive threshold whose false-allow rate stays <= 25%",
+    "false_allow_rate": 0.3108108108108108,
+    "block_rate": 0.26
+  },
+  "accuracy_against_ground_truth": {
+    "majority_class_baseline": 0.51,
+    "teacher_at_rubric_threshold": {
+      "value": 0.8,
+      "lo": 0.74,
+      "hi": 0.85,
+      "n": 200,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "teacher_at_oracle_threshold": {
+      "value": 0.94,
+      "lo": 0.8999999999999999,
+      "hi": 0.965,
+      "n": 200,
+      "method": "bca",
+      "confidence": 0.95,
+      "cut": 7.7,
+      "caveat": "tuned on the same labels it is scored against; an upper bound, not a fair comparison"
+    },
+    "student": {
+      "value": 0.77,
+      "lo": 0.705,
+      "hi": 0.825,
+      "n": 200,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "student_minus_teacher_rubric_cut": {
+      "diff": -0.030000000000000027,
+      "lo": -0.08500000000000008,
+      "hi": 0.025000000000000022,
+      "p_value": 0.2846,
+      "n": 200,
+      "significant": false
+    },
+    "student_minus_teacher_oracle_cut": {
+      "diff": -0.16999999999999993,
+      "lo": -0.22999999999999998,
+      "hi": -0.11499999999999999,
+      "p_value": 0.0,
+      "n": 200,
+      "significant": true
+    },
+    "balanced_accuracy": {
+      "teacher_rubric_cut": 0.7959183673469388,
+      "teacher_oracle_cut": 0.9389755902360944,
+      "student": 0.7653061224489797
+    },
+    "verdict": "student significantly worse than the teacher at its best threshold",
+    "calibration_finding": "The teacher's raw 1-10 score is not usable as an accept/reject decision at the rubric's own 7.0 boundary. Re-cutting the identical signal at its best threshold recovers most of the loss, which makes this a calibration failure rather than a discrimination failure."
+  },
+  "fidelity_to_teacher": {
+    "agreement": 0.88,
+    "auc_against_teacher_labels": 0.8077343370568236,
+    "student_accuracy_by_degradation": {
+      "fabrication": {
+        "value": 1.0,
+        "lo": 0.8156818649911483,
+        "hi": 1.0,
+        "n": 17,
+        "method": "wilson",
+        "confidence": 0.95
+      },
+      "hedging": {
+        "value": 1.0,
+        "lo": 0.8063923194655637,
+        "hi": 1.0,
+        "n": 16,
+        "method": "wilson",
+        "confidence": 0.95
+      },
+      "numeric_swap": {
+        "value": 0.0,
+        "lo": 0.0,
+        "hi": 0.16817922405261626,
+        "n": 19,
+        "method": "wilson",
+        "confidence": 0.95
+      },
+      "omission": {
+        "value": 0.7916666666666666,
+        "lo": 0.5833333333333334,
+        "hi": 0.9166666666666666,
+        "n": 24,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "reference": {
+        "value": 1.0,
+        "lo": 0.9637055378535367,
+        "hi": 0.9999999999999999,
+        "n": 102,
+        "method": "wilson",
+        "confidence": 0.95
+      },
+      "topic_drift": {
+        "value": 0.0,
+        "lo": 0.0,
+        "hi": 0.14865487460862087,
+        "n": 22,
+        "method": "wilson",
+        "confidence": 0.95
+      }
+    },
+    "teacher_accuracy_by_degradation": {
+      "fabrication": {
+        "value": 0.8823529411764706,
+        "lo": 0.6470588235294118,
+        "hi": 1.0,
+        "n": 17,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "hedging": {
+        "value": 1.0,
+        "lo": 0.8063923194655637,
+        "hi": 1.0,
+        "n": 16,
+        "method": "wilson",
+        "confidence": 0.95
+      },
+      "numeric_swap": {
+        "value": 0.5789473684210527,
+        "lo": 0.3157894736842105,
+        "hi": 0.7894736842105263,
+        "n": 19,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "omission": {
+        "value": 0.9583333333333334,
+        "lo": 0.7916666666666666,
+        "hi": 1.0,
+        "n": 24,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "reference": {
+        "value": 0.9901960784313726,
+        "lo": 0.9411764705882353,
+        "hi": 1.0,
+        "n": 102,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "topic_drift": {
+        "value": 1.0,
+        "lo": 0.8513451253913791,
+        "hi": 1.0,
+        "n": 22,
+        "method": "wilson",
+        "confidence": 0.95
+      }
+    },
+    "shared_blind_spot": "numeric_swap",
+    "note": "Distillation is supposed to transfer the teacher's behaviour, blind spots included. Comparing per-degradation accuracy is how you check whether the student inherited the teacher's weaknesses or invented its own."
+  },
+  "verbosity_probe_holdout": {
+    "n": 500,
+    "allow_rate": 0.0,
+    "mean_probability": 0.0,
+    "note": "Padded references contain no error, so a well-behaved guardrail allows them. Never seen during training."
+  },
+  "class_balance": {
+    "positive_rate": 0.5,
+    "sampling": "Per item: the reference (label 1) against one sampled error variant (label 0). The battery's 15:1 cross-product is an enumeration artefact, not a production base rate. Verbosity probes are held out of training entirely and scored separately, because 'contains filler' would otherwise become the dominant positive feature."
+  },
+  "calibration": {
+    "brier": 0.15833069562857943,
+    "ece": 0.04023432400175548,
+    "ece_vs_teacher_labels": 0.04023432400175548,
+    "ece_vs_truth_before_recalibration": 0.19303570398014122,
+    "ece_vs_truth_after_recalibration": 0.01453265650306751,
+    "recalibrated_on_free_gold_labels": true,
+    "n_calibration_items": 200,
+    "reliability_curve": [
+      {
+        "bin_lo": 0.0,
+        "bin_hi": 0.1,
+        "n": 50,
+        "confidence": 0.0,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.1,
+        "bin_hi": 0.2,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "bin_lo": 0.2,
+        "bin_hi": 0.30000000000000004,
+        "n": 2,
+        "confidence": 0.29067823771933315,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.30000000000000004,
+        "bin_hi": 0.4,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "bin_lo": 0.4,
+        "bin_hi": 0.5,
+        "n": 1,
+        "confidence": 0.5,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.5,
+        "bin_hi": 0.6000000000000001,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "bin_lo": 0.6000000000000001,
+        "bin_hi": 0.7000000000000001,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "bin_lo": 0.7000000000000001,
+        "bin_hi": 0.8,
+        "n": 147,
+        "confidence": 0.7062937062937064,
+        "accuracy": 0.6938775510204082
+      },
+      {
+        "bin_lo": 0.8,
+        "bin_hi": 0.9,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "bin_lo": 0.9,
+        "bin_hi": 1.0,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      }
+    ],
+    "reliability_curve_before": [
+      {
+        "bin_lo": 0.0,
+        "bin_hi": 0.1,
+        "n": 29,
+        "confidence": 0.007447369770629614,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.1,
+        "bin_hi": 0.2,
+        "n": 4,
+        "confidence": 0.13876446840579465,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.2,
+        "bin_hi": 0.30000000000000004,
+        "n": 3,
+        "confidence": 0.2542706941982921,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.30000000000000004,
+        "bin_hi": 0.4,
+        "n": 1,
+        "confidence": 0.3762152256812397,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.4,
+        "bin_hi": 0.5,
+        "n": 3,
+        "confidence": 0.42830406406490523,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.5,
+        "bin_hi": 0.6000000000000001,
+        "n": 2,
+        "confidence": 0.5396424695411761,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.6000000000000001,
+        "bin_hi": 0.7000000000000001,
+        "n": 2,
+        "confidence": 0.6444233344797686,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.7000000000000001,
+        "bin_hi": 0.8,
+        "n": 6,
+        "confidence": 0.7552792674635275,
+        "accuracy": 0.0
+      },
+      {
+        "bin_lo": 0.8,
+        "bin_hi": 0.9,
+        "n": 132,
+        "confidence": 0.8654021512300215,
+        "accuracy": 0.6742424242424242
+      },
+      {
+        "bin_lo": 0.9,
+        "bin_hi": 1.0,
+        "n": 18,
+        "confidence": 0.9044043624111152,
+        "accuracy": 0.7222222222222222
+      }
+    ],
+    "finding": "Distillation inherits the teacher's calibration error along with its decisions: the student's raw probability means 'the teacher would accept this', not 'this is acceptable'. Degradation gold labels cost nothing to produce, so an isotonic map fitted on a held-out slice of them fixes the mismatch for free -- the underrated payoff of manufacturing ground truth rather than buying it."
+  },
+  "economics": {
+    "teacher_cost_per_1k_usd": 0.2513304,
+    "student_cost_per_1k_usd": 0.0,
+    "teacher_mean_latency_ms": 702.6774598653908,
+    "student_mean_latency_ms": 5.124642373023865,
+    "student_p95_latency_ms": 7.23800776322605,
+    "latency_speedup": 137.11736521640756,
+    "note": "The student runs locally on CPU: marginal cost is compute only."
+  },
+  "cascade": {
+    "question": "How much traffic can the student absorb before combined accuracy becomes distinguishable from judging everything with the LLM?",
+    "rows": [
+      {
+        "confidence_margin": 0.0,
+        "escalation_rate": 0.0,
+        "combined_accuracy": {
+          "value": 0.77,
+          "lo": 0.705,
+          "hi": 0.825,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.0,
+        "mean_latency_ms": 5.124642373023865
+      },
+      {
+        "confidence_margin": 0.1,
+        "escalation_rate": 0.005,
+        "combined_accuracy": {
+          "value": 0.775,
+          "lo": 0.71,
+          "hi": 0.83,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.001256652,
+        "mean_latency_ms": 8.638029672350818
+      },
+      {
+        "confidence_margin": 0.2,
+        "escalation_rate": 0.005,
+        "combined_accuracy": {
+          "value": 0.775,
+          "lo": 0.71,
+          "hi": 0.83,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.001256652,
+        "mean_latency_ms": 8.638029672350818
+      },
+      {
+        "confidence_margin": 0.3,
+        "escalation_rate": 0.005,
+        "combined_accuracy": {
+          "value": 0.775,
+          "lo": 0.71,
+          "hi": 0.83,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.001256652,
+        "mean_latency_ms": 8.638029672350818
+      },
+      {
+        "confidence_margin": 0.4,
+        "escalation_rate": 0.005,
+        "combined_accuracy": {
+          "value": 0.775,
+          "lo": 0.71,
+          "hi": 0.83,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.001256652,
+        "mean_latency_ms": 8.638029672350818
+      },
+      {
+        "confidence_margin": 0.5,
+        "escalation_rate": 0.75,
+        "combined_accuracy": {
+          "value": 0.945,
+          "lo": 0.905,
+          "hi": 0.97,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.1884978,
+        "mean_latency_ms": 532.132737272067
+      },
+      {
+        "confidence_margin": 0.7,
+        "escalation_rate": 0.75,
+        "combined_accuracy": {
+          "value": 0.945,
+          "lo": 0.905,
+          "hi": 0.97,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.1884978,
+        "mean_latency_ms": 532.132737272067
+      },
+      {
+        "confidence_margin": 1.01,
+        "escalation_rate": 1.0,
+        "combined_accuracy": {
+          "value": 0.94,
+          "lo": 0.8999999999999999,
+          "hi": 0.965,
+          "n": 200,
+          "method": "bca",
+          "confidence": 0.95
+        },
+        "cost_per_1k_usd": 0.2513304,
+        "mean_latency_ms": 707.8021022384147
+      }
+    ],
+    "judge_only_accuracy": {
+      "value": 0.94,
+      "lo": 0.8999999999999999,
+      "hi": 0.965,
+      "n": 200,
+      "method": "bca",
+      "confidence": 0.95
+    },
+    "recommended": {
+      "confidence_margin": 0.5,
+      "escalation_rate": 0.75,
+      "combined_accuracy": {
+        "value": 0.945,
+        "lo": 0.905,
+        "hi": 0.97,
+        "n": 200,
+        "method": "bca",
+        "confidence": 0.95
+      },
+      "cost_per_1k_usd": 0.1884978,
+      "mean_latency_ms": 532.132737272067
+    },
+    "sentence": "Escalating only 75% of traffic to the LLM judge matched judge-only accuracy (94.5% vs 94.0%) at 75% of the cost and 532 ms mean latency."
+  },
+  "model_path": "results/student_model.joblib",
+  "model_family": "gemini"
+}

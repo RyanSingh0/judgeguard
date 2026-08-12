@@ -1,0 +1,54 @@
+name: eval-gate
+
+# Eval-driven development: a change that makes the evaluator worse breaks the
+# build, exactly like a failing unit test. The gate runs against the
+# deterministic simulator, so it needs no API key, no quota and no secrets --
+# which is the only way an eval gate stays green on a fork's pull request.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"      # Monday morning drift check
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      JUDGEGUARD_PROVIDER_MODE: simulated
+      JUDGEGUARD_CACHE_DIR: /tmp/jg-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv sync --extra dev
+
+      - name: Rebuild the dataset and the student from scratch
+        run: |
+          uv run python experiments/00_build_dataset.py --items 200
+          uv run python experiments/01_discrimination.py --items 200
+          uv run python experiments/05_rubric_ablation.py --items 200
+          uv run python experiments/09_distill.py --items 200
+
+      - name: Eval gate
+        run: uv run python experiments/regression_suite.py --fail-under 0.70 --max-ece 0.15
+
+      - name: Verify every number quoted in the docs against results/
+        # Documentation drifts from data silently. This makes it loud.
+        run: uv run python scripts/verify_claims.py
+
+      - name: Fail if committed results drifted
+        run: |
+          git diff --stat -- results/ || true
+          if ! git diff --quiet -- results/01_discrimination.json; then
+            echo "::warning::committed results changed — regenerate and commit them deliberately"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-gate-report
+          path: results/regression_gate.json

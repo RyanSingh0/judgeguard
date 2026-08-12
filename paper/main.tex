@@ -1,0 +1,374 @@
+%==============================================================================
+% JudgeGuard --- workshop paper draft
+%
+% Target venues (4-page + references workshop track):
+%   - NeurIPS Workshop on Evaluating Evaluations / Statistical Foundations of LLM Eval
+%   - ICLR Workshop on Building Trust in LLMs
+%   - ACL Workshop on Evaluation & Comparison of NLP Systems (Eval4NLP)
+%
+% BEFORE SUBMITTING
+%   1. Replace \usepackage{article}-style preamble with the venue style file.
+%   3. Re-run the battery in LIVE mode. Every number below currently comes from
+%      the deterministic simulator and is marked as such. A paper reporting
+%      simulated numbers as measurements would be misconduct; the placeholders
+%      in \simnote must be resolved before submission.
+%   3. Run the human-validation study described in Section 6 (~300 pairs, 3
+%      annotators). Reviewers will ask for it and they will be right to.
+%==============================================================================
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{url}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+\newcommand{\simnote}[1]{\textcolor{red}{#1}}
+\newcommand{\ci}[3]{\,[#1,\,#3]}
+
+\title{\textbf{JudgeGuard: Degradation-Generated Gold Labels for Measuring\\
+LLM Judge Reliability on Text and Agent Trajectories}}
+\author{Aryan Meena\\\texttt{araj7043@gmail.com}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+LLM-as-a-judge is now the default evaluation method for open-ended generation, yet the judge
+itself is rarely evaluated, because doing so appears to require human preference labels. We
+remove that requirement. \emph{Gold labelling by degradation} starts from a known-good reference
+answer and applies a controlled, auditable perturbation that definitionally makes it worse; a
+judge that cannot rank the reference above the broken copy has committed a measured failure with
+no annotation cost. We contribute three things. First, a construction in which reference answers
+are \emph{composed} from an explicit fact list, so every perturbation is exact and reversible and
+its semantic footprint is enumerable --- which is what makes the gold label defensible rather
+than assumed. Second, and centrally, we transfer the construction from text outputs to
+\emph{agent trajectories}, degrading an agent's process rather than its answer, and thereby
+expose failure classes that output-only evaluation cannot reach by construction. Third, a full
+statistical treatment: every reported quantity carries a BCa bootstrap interval, judge
+comparisons are paired, and multiplicity is controlled. Applied to a four-model panel over 7{,}500
+text gold pairs and 540 trajectory comparisons per judge, we find that judges are weakest on the
+errors with the smallest textual footprint, that malformed tool arguments are the least-detected
+failure class by a wide margin, and that a judge which ranks well can nonetheless be worse than a
+constant classifier when thresholded as an accept/reject gate. Because degradation labels are free,
+this last failure is repairable at zero annotation cost: recalibrating a distilled student on
+held-out gold labels reduces its expected calibration error six-fold, yielding an inline guardrail
+that blocks half of all bad output at perfect block precision in under 7\,ms --- and whose
+residual blind spots are structural, which we show is an argument for a cascade rather than for a
+larger student. Code, committed results and a live demo are released.
+\end{abstract}
+
+\simnote{\textbf{Reviewer-facing note (remove before submission).} All numerical results in this
+draft were produced by the deterministic judge simulator distributed with the artefact
+(\texttt{configs/simulator.yaml}), not by the named commercial models. They demonstrate that the
+harness measures what it claims to measure. Replacing them with a live run is a
+single-environment-variable change and is a hard prerequisite for submission.}
+
+%------------------------------------------------------------------------------
+\section{Introduction}
+
+Automatic evaluation of open-ended generation has converged on LLM-as-a-judge
+\cite{zheng2023judging,liu2023geval}. The judge is cheap, fast and correlates with human
+preference well enough to steer development. It is also biased in ways that are documented but
+rarely measured \emph{in situ}: judges favour the first-presented option
+\cite{wang2024large}, reward length independently of content \cite{zeng2024evaluating}, prefer
+their own family's generations \cite{panickssery2024selfpreference}, and disagree with themselves
+across reruns \cite{stureborg2024large}.
+
+The reason practitioners do not measure their own judge is economic. Establishing that a judge is
+right requires knowing which of two responses is better, which appears to require human
+annotators. Annotation is expensive, slow, and itself noisy on the ambiguous pairs that matter.
+
+We invert the problem. Rather than obtaining labels for existing pairs, we \emph{manufacture}
+pairs whose ordering is known by construction:
+
+\begin{quote}
+Take a reference answer known to be good. Apply a perturbation that definitionally makes it
+worse. The reference is now known to be preferable, with no annotator involved.
+\end{quote}
+
+This idea is not new in spirit --- perturbation-based probes appear in factual-consistency
+evaluation \cite{kryscinski2020evaluating} and in learned metrics \cite{sellam2020bleurt}. Our
+contributions are (i) a construction that makes the perturbation \emph{auditable} at the level of
+individual facts, (ii) the transfer of the construction from outputs to \emph{agent
+trajectories}, and (iii) a statistical treatment in which no bare point estimate is ever reported.
+
+%------------------------------------------------------------------------------
+\section{Method}
+
+\subsection{Composable references}
+
+The construction is only defensible if one can state exactly what a perturbation destroyed. With
+a free-text gold answer one can delete a sentence, but not enumerate which required facts went
+with it, nor regenerate a fluent answer identical to the reference except for one corrupted
+number.
+
+We therefore compose each reference from an explicit fact list. A fact carries a key, a typed
+value, a unit and a clause template; the reference is the join of the rendered clauses. Dropping
+a fact and recomposing yields a grammatical answer \emph{provably} missing exactly one required
+item. Each generated variant records a one-sentence audit trail
+(\texttt{"effect: 11.7 $\rightarrow$ 15.3"}), the set of facts removed or corrupted, its length
+ratio to the reference, and a boolean \texttt{introduces\_error}.
+
+Our corpus comprises 500 items across ten domains, six required facts each. A loader for external
+corpora is provided; auditability degrades correspondingly (Section~\ref{sec:limits}).
+
+\subsection{Text degradations}
+
+Six degradations, each parameterised by severity $s \in [0,1]$: \texttt{omission},
+\texttt{fabrication}, \texttt{numeric\_swap}, \texttt{topic\_drift}, \texttt{hedging}, and
+\texttt{verbosity}. The first five introduce an error. \texttt{verbosity} does not: it pads the
+\emph{unmodified reference} with content-free filler, so the correct score change is exactly zero
+and any deviation is verbosity bias measured in the judge's own units. Sweeping $s$ converts the
+qualitative claim ``judges are unreliable'' into accuracy as a function of defect magnitude.
+
+\subsection{Trajectory degradations}
+\label{sec:traj}
+
+Agent evaluation increasingly matters \cite{yao2023react,yehudai2025survey}, and output-only
+scoring is structurally blind to process errors. We instantiate a deliberately minimal agent:
+four \emph{deterministic}, side-effect-free tools over a fixed lookup table. Determinism is
+load-bearing --- it makes the correct trajectory unambiguous without a human. Sixty tasks of
+three to four tool calls are executed for real, so every recorded intermediate value is genuinely
+the value the named tool returns.
+
+Four trajectory degradations follow the same discipline:
+\texttt{length\_padding} (the probe: redundant but harmless steps, unchanged correct answer),
+\texttt{phantom\_tool} (a call to a tool absent from the declared action space, which is printed
+verbatim in the prompt), \texttt{wrong\_argument} (correct tool, wrong argument value, transcript
+left internally consistent), and \texttt{silent\_failure} (correct final answer reached via a
+corrupted path). \texttt{silent\_failure} is the conceptual limit case: by construction, any
+evaluator observing only the final answer scores it perfect.
+
+\subsection{Judge configurations and the swap protocol}
+
+Judges are \emph{reference-free}: they see the source context, the question and a candidate,
+never the gold answer. We compare four configurations --- \texttt{vague}, \texttt{rubric},
+\texttt{cot} (rubric plus reason-before-scoring), and \texttt{pairwise}.
+
+Every pairwise comparison is run in both orderings and normalised out of displayed-position space
+into semantic space. Disagreement between orderings is not a proxy for position bias; it is the
+measurement. We report four accuracy views: reference-first, degraded-first, a seeded random
+single ordering, and swap-and-average, in which an ordering disagreement is scored as a
+\emph{miss} rather than resolved in the judge's favour.
+
+\subsection{Statistics}
+
+Every accuracy is reported with a 95\% BCa bootstrap interval \cite{efron1987better}
+($10{,}000$ resamples), with a Wilson interval as the degenerate-sample fallback. Judge and
+configuration comparisons use a paired bootstrap that resamples item indices jointly, and
+McNemar's test \cite{mcnemar1947note} for paired binary decisions. Agreement uses Cohen's $\kappa$
+and, in the five-rerun self-consistency setting, Krippendorff's $\alpha$
+\cite{krippendorff2018content}. Monotonicity of score in severity uses Spearman's $\rho$.
+Multiplicity across the twelve configuration comparisons is controlled by Holm's step-down
+procedure \cite{holm1979simple}. Sample sizes are chosen by power analysis rather than by budget:
+$7{,}500$ pairs resolve a 7-point accuracy difference at $>99\%$ power, $\alpha = 0.05$.
+
+%------------------------------------------------------------------------------
+\section{Results}
+
+\simnote{All numbers in this section are simulator outputs pending a live run.}
+
+\begin{table}[t]
+\centering\small
+\caption{Discrimination accuracy by degradation type (\texttt{cot}, temperature 0, $n=7{,}500$
+pairs per judge). Numeric perturbation is the worst-detected class for every judge, despite the
+correct value appearing verbatim in the source record supplied with the prompt.}
+\begin{tabular}{lcccccc}
+\toprule
+Judge & Overall & Topic drift & Hedging & Omission & Fabrication & \textbf{Numeric swap} \\
+\midrule
+J1 (frontier)   & 95.4\ci{94.9}{95.8} & 100.0 & 98.1 & 96.5 & 96.4 & \textbf{85.9} \\
+J2 (70B open)   & 89.5\ci{88.7}{90.2} & 98.1 & 93.1 & 92.1 & 88.2 & \textbf{75.8} \\
+J3 (27B open)   & 88.1\ci{87.3}{88.8} & 97.3 & 92.5 & 90.7 & 86.5 & \textbf{73.4} \\
+J4 (20B open)   & 81.7\ci{80.8}{82.6} & 94.6 & 83.0 & 87.7 & 75.3 & \textbf{67.8} \\
+\bottomrule
+\end{tabular}
+\label{tab:disc}
+\end{table}
+
+\paragraph{Detection tracks surface disturbance, not semantic damage.}
+Table~\ref{tab:disc} orders the degradation columns by how much of the text they visibly alter, and
+detection accuracy follows that order rather than the order of semantic severity. An answer that
+addresses a different question is caught 95--100\% of the time; changing a single numeric value ---
+which leaves the prose untouched and makes the claim false --- is caught 68--86\% of the time, and
+is the worst class for all four judges without exception. At $s = 0.2$ (a $\approx 4\%$
+perturbation) the best judge reaches $66.2\ci{62.0}{70.4}$ and the weakest $54.8\ci{50.4}{59.0}$.
+Spearman correlation between severity and assigned score degrades in the same order
+($\rho = -0.78, -0.60, -0.54, -0.39$). We emphasise that the source record supplied in the prompt
+states every value, so this is not a retrieval failure: the information required to detect the
+substitution was present and unused.
+
+\paragraph{Fixed-order evaluation reports an accuracy it did not earn.}
+Order disagreement ranges from $11.6\ci{10.6}{12.6}$ to $32.3\ci{30.8}{33.8}$ percent. A harness
+that always presents the reference first over-reports accuracy by $+3.9\ci{3.3}{4.6}$ points for the
+strongest judge and $+12.1\ci{11.1}{13.2}$ for the weakest, all $p < 0.001$ under a paired
+bootstrap. Swap-and-average \emph{lowers} every reported number (by 4.0 to 13.3 points) at double the
+API cost: the standard mitigation does not make a judge more accurate, it makes the accuracy one was
+already reporting less of an illusion.
+
+\paragraph{Verbosity and self-preference.}
+Padding a correct answer to $3.1\times$ its length with content-free filler raised its score by up to
+$+1.45\ci{1.36}{1.53}$ points on a 1--10 scale, with 85--94\% of padded answers outscoring the
+identical original. Chain-of-thought prompting roughly halves but never eliminates the effect,
+despite a rubric criterion explicitly naming padding as a defect. Under a leave-one-out estimator
+that cancels response quality by comparing each judge's score against the mean of its peers on the
+same response, every judge favoured its own family, by $+0.12$ to $+0.79$ points; the effect was
+\emph{largest} for the most accurate judge.
+
+\paragraph{Prompt structure buys discrimination, at a stated token price.}
+Moving from \texttt{vague} to \texttt{cot} improved accuracy by $+8.2$ to $+15.7$ points; all twelve
+pairwise configuration comparisons survived Holm correction. The gain is largest where the judge is
+weakest, and costs $\approx 1.6$M additional tokens, i.e.\ 0.005--0.010 accuracy points per thousand
+extra tokens.
+
+\paragraph{Self-consistency bounds everything else.}
+Across five reruns at temperature $0.7$, Krippendorff's $\alpha$ ranged from $0.545$ down to
+$0.182$; no judge reached the conventional $0.667$ floor. Two independent runs disagreed on the
+accept/reject decision for 19.2--31.5\% of items. Any accuracy difference narrower than this is not
+measurable from single-sample judging.
+
+\begin{table}[t]
+\centering\small
+\caption{Trajectory blindness: miss rate under swap-and-average scoring, 540 comparisons per judge.
+Malformed arguments are the least-detected class for every judge.}
+\begin{tabular}{lccc}
+\toprule
+Judge & Hallucination blindness & Path blindness & \textbf{Argument blindness} \\
+      & (undefined tool called) & (right answer, wrong path) & (wrong value, correct tool) \\
+\midrule
+J1 & 10.0 & 20.6 & \textbf{37.2} \\
+J2 & 25.0 & 30.0 & \textbf{56.7} \\
+J3 & 26.7 & 45.0 & \textbf{53.9} \\
+J4 & 43.9 & 47.2 & \textbf{64.4} \\
+\bottomrule
+\end{tabular}
+\label{tab:traj}
+\end{table}
+
+\paragraph{Argument blindness is the central empirical result.}
+Table~\ref{tab:traj} reports miss rates on trajectory comparisons. Detection accuracy for malformed
+arguments ranged from $62.8\ci{55.6}{69.4}$ down to $35.6\ci{28.9}{42.8}$ percent. The asymmetry
+against \texttt{phantom\_tool} is instructive: the declared action space is printed verbatim in the
+prompt, so detecting an undefined tool is a lookup the judge can perform, and it is the
+best-detected class. Detecting a wrong argument requires an execution model of the tool and a check
+of a value against it; the judge has neither, and the transcript reads as valid. Inserting redundant
+but harmless steps into an already-correct trajectory raised its score by $+0.14$ to $+0.39$ points
+(all intervals excluding zero) --- judges rewarding an agent for taking a longer route to the same
+answer.
+
+\paragraph{Ranking well and deciding well are different properties.}
+The most accurate judge in the panel ranks a reference above a broken copy $95.4\%$ of the time.
+Thresholded at the boundary its own rubric defines ($\geq 7/10$), it classifies
+reference-versus-degraded at $80.0\ci{74.0}{85.0}$ percent; re-cutting the identical score at its
+empirically best threshold gives $94.0\ci{90.0}{96.5}$. Nothing about the judge's discrimination
+changed --- only the cut point did, and it is worth 14 points. This is a calibration failure
+\cite{guo2017calibration}, not a capability failure, and it is invisible to any evaluation that
+reports ranking accuracy alone, which is what leaderboards report.
+
+\paragraph{Distillation transfers blind spots, and over-transfers them.}
+We distil the winning judge \cite{hinton2015distilling} into a logistic model over hashed character
+and word $n$-grams of the response, plus interpretable structural features and coverage features
+against the source, trained on the \emph{teacher's} labels. Two sampling decisions are load-bearing
+and we report them because the naive alternative flatters the result: the battery enumerates fifteen
+error variants per reference, and training at that ratio yields a model that scores $94.8\%$ by
+learning the base rate --- a correctly calibrated such model assigns $p(\text{good}) \approx 0.06$ to
+\emph{any} unpadded text, the reference included. We therefore train one-to-one and hold the
+verbosity probes out of training entirely, since ``contains filler'' would otherwise become the
+dominant positive feature.
+
+The corrected student reaches $77.0\ci{70.5}{82.5}$ against the teacher's $94.0$, a real gap of
+$-17.0$ points ($95\%$ CI $[-23.0, -11.5]$, $p < 0.001$). The gap is concentrated: the student
+matches the teacher on hedging ($100$ vs $100$) and correctly allows references ($100$ vs $99$),
+and scores $0.0\%$ on numeric substitution (teacher $57.9\%$) and on same-domain topic drift
+(teacher $100\%$). Both zeros are structural rather than tuning failures --- a bag-of-$n$-grams
+model cannot verify that a stated number matches the one in the record. The student's worst class is
+the teacher's worst class, amplified.
+
+\paragraph{Free labels buy free calibration.}
+Distillation inherits the teacher's calibration error along with its decisions: the student's raw
+probability means ``the teacher would accept this'' and has ECE $0.193$ against ground truth.
+Because degradation gold labels are manufactured rather than annotated, they are free, and an
+isotonic map \cite{zadrozny2002transforming} fitted on a held-out slice of $200$ of them reduces ECE
+to $0.015$. \emph{The labels being free is what makes the calibration free}, which we regard as the
+underrated consequence of the construction.
+
+\paragraph{Guardrail behaviour and the cascade.}
+As an inline gate the relevant metrics are asymmetric: the student blocks $53.1\%$ of bad output at
+$100\%$ block precision and a $0.0\%$ false-block rate --- it never blocked a correct answer, which
+is the property that decides whether such a component survives contact with production. Because its
+residual error is concentrated in classes it cannot see, the deployable configuration is a cascade
+rather than a replacement: escalating $75\%$ of traffic to the judge yields $94.5\ci{90.5}{97.0}$
+against judge-only $94.0\ci{90.0}{96.5}$, i.e.\ indistinguishable accuracy at $75\%$ of the cost. A
+$25\%$ saving is a modest result and it is the one the data supports.
+
+Finally, an asymmetry worth recording: held-out padded references --- correct answers that are
+merely three times longer --- are allowed $0\%$ of the time, while the judges scored the same
+padding \emph{up} by as much as $1.45$ points. The judge exhibits pro-verbosity bias and the
+distilled student anti-verbosity bias; neither is neutral with respect to length.
+
+\paragraph{Serving.}
+The guardrail runs with no network call inside the request path: $p_{50} = 3.8$\,ms,
+$p_{99} = 7.2$\,ms against a stated $150$\,ms budget, holding to concurrency $4$ on two cores before
+queueing dominates. This is a real measurement on real hardware and is the one result in the paper
+unaffected by the simulator caveat.
+
+%------------------------------------------------------------------------------
+\section{Related work}
+
+Judge bias taxonomies are established: position \cite{wang2024large}, verbosity
+\cite{zeng2024evaluating}, self-preference \cite{panickssery2024selfpreference} and
+self-inconsistency \cite{stureborg2024large}. Our contribution is not the taxonomy but the
+label-free measurement protocol and its extension beyond text. Perturbation-based evaluation has
+precedent in factual-consistency work \cite{kryscinski2020evaluating} and learned metrics
+\cite{sellam2020bleurt}; we make the perturbation fact-level auditable and sweep its magnitude.
+Component-wise generation metrics \cite{es2024ragas} evaluate pipelines rather than the evaluator.
+Agent evaluation surveys \cite{yehudai2025survey} identify process evaluation as open; to our
+knowledge the systematic transfer of degradation-generated gold labels to trajectories, with
+intervals, is new. Distilled safety and quality classifiers are deployed practice
+\cite{inan2023llamaguard}; we add the observation that distillation transmits miscalibration and
+that manufactured labels repair it at no cost.
+
+%------------------------------------------------------------------------------
+\section{Limitations}
+\label{sec:limits}
+
+Degradation-generated labels establish discrimination against \emph{known-bad}, not alignment with
+human preference on genuinely ambiguous pairs; a judge could score perfectly here and still rank
+two good answers backwards. Severity is a construction parameter, not a human-rated one. The
+corpus is procedurally generated, trading register realism for auditability. The agent is
+deliberately minimal --- deterministic, stateless, four tools --- so the trajectory result should
+be read as a \emph{lower bound}: judges miss malformed arguments even in the easiest possible
+setting, with the action space printed in the prompt. Multiplicity is corrected within, not
+across, experiment families. Ties and order inconsistencies are scored as failures, which is
+conservative but makes swap-and-average accuracy incomparable with numbers computed under other
+conventions. The student's perfect score on \texttt{fabrication} is partly memorisation of six
+fixed templates; a template-disjoint split would separate signal from recall. Finally, and most importantly, the numbers in this draft are simulator outputs; the
+artefact's committed results are watermarked accordingly.
+
+%------------------------------------------------------------------------------
+\section{Conclusion}
+
+Judge reliability is measurable without annotators. The measurement is cheap enough to gate a CI
+pipeline, and applied to agent trajectories it exposes a failure class --- malformed tool
+arguments passed to valid tools --- that output-only evaluation cannot reach by construction and
+that judges miss in 34--69\% of cases even under the most favourable conditions we could
+construct. A separate finding falls out of the same machinery: a judge that ranks
+well can lose 14 points as a decision rule purely to threshold placement, and because manufactured
+gold labels are free, diagnosing and repairing that is free too. Immediate next steps are a live-model run, a
+human-validation study of the degradation construct on $\approx 300$ pairs with three annotators,
+and extension of the trajectory battery to stateful and non-deterministic tools.
+
+\paragraph{Artefact.} Code, committed results, figures, a reproducible eval gate and a live demo:
+\url{https://github.com/RyanSingh0/judgeguard}.
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

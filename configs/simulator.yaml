@@ -1,0 +1,81 @@
+# ===========================================================================
+# SIMULATOR PROFILE  (v4 -- aliases realigned to the live panel verified
+# 2026-07-31; the previously pinned gemini-2.0-flash / qwen-3-32b /
+# mistral-small-3.2:free were all retired or de-freed by the providers.)
+# ===========================================================================
+# SIMULATOR PROFILE  --  read this before you read any number in results/.
+# ===========================================================================
+# When no API keys are present, JudgeGuard runs against a deterministic
+# generative model of judge behaviour instead of a real LLM. Its purpose is to
+# make the harness runnable, testable and CI-gated by anyone who clones the
+# repo, NOT to stand in for measurement.
+#
+# Every parameter below is an explicit, falsifiable PRIOR. Nothing here is a
+# finding. Artefacts produced in this mode are stamped provenance.mode =
+# "simulated" and every figure is watermarked. Supply a key, set
+# JUDGEGUARD_PROVIDER_MODE=live, and rerun the identical commands to replace
+# the priors with measurements.
+#
+# The value of writing the priors down: they are hypotheses. If the live run
+# contradicts them, that disagreement is itself a result worth reporting.
+# ===========================================================================
+
+version: 4
+
+# How detectable each degradation is to a judge that never sees the reference.
+# Low value = the judge is structurally blind to this error class.
+detectability:
+  text:
+    topic_drift:  0.92   # answer addresses a different question -- obvious
+    hedging:      0.62   # claims replaced by vagueness -- visible as evasion
+    fabrication:  0.48   # plausible falsehood -- needs world knowledge
+    omission:     0.35   # you cannot miss what you were never shown
+    numeric_swap: 0.18   # 42 -> 47 reads as fluent and confident
+    verbosity:    0.00   # BIAS PROBE: no error is introduced at all
+  trajectory:
+    phantom_tool:    0.55  # a tool name that was never defined
+    silent_failure:  0.30  # right answer, wrong path
+    wrong_argument:  0.14  # correct tool, wrong argument value
+    length_padding:  0.00  # BIAS PROBE: redundant but harmless steps
+
+# Per-judge behavioural profile.
+#   sensitivity   multiplier on detectability (discrimination power)
+#   verbosity_pull  points added per doubling of answer length
+#   position_pull   latent-score bonus given to whichever option is shown first
+#   self_pref       bonus given to output from the judge's own model family
+#   noise_sd        score jitter (drives self-consistency at temperature > 0)
+judges:
+  gemini-flash: {sensitivity: 1.15, verbosity_pull: 0.35, position_pull: 0.16, self_pref: 0.30, noise_sd: 0.55}
+  llama70b:     {sensitivity: 0.95, verbosity_pull: 0.62, position_pull: 0.28, self_pref: 0.42, noise_sd: 0.75}
+  qwen27b:      {sensitivity: 0.88, verbosity_pull: 0.55, position_pull: 0.24, self_pref: 0.38, noise_sd: 0.80}
+  gptoss20b:    {sensitivity: 0.72, verbosity_pull: 0.78, position_pull: 0.40, self_pref: 0.25, noise_sd: 1.00}
+  gemini-lite:  {sensitivity: 0.95, verbosity_pull: 0.45, position_pull: 0.20, self_pref: 0.28, noise_sd: 0.65}
+  nemotron9b:   {sensitivity: 0.68, verbosity_pull: 0.80, position_pull: 0.44, self_pref: 0.22, noise_sd: 1.05}
+  glm47:        {sensitivity: 0.90, verbosity_pull: 0.52, position_pull: 0.26, self_pref: 0.35, noise_sd: 0.78}
+  local3b:      {sensitivity: 0.55, verbosity_pull: 0.85, position_pull: 0.52, self_pref: 0.20, noise_sd: 1.25}
+
+# Prompt-structure effects. The rubric-ablation experiment measures these.
+configs:
+  vague:    {sensitivity: 0.80, verbosity_pull: 1.35, noise_sd: 1.30}
+  rubric:   {sensitivity: 1.00, verbosity_pull: 1.00, noise_sd: 1.00}
+  cot:      {sensitivity: 1.12, verbosity_pull: 0.80, noise_sd: 0.85}
+  pairwise: {sensitivity: 1.05, verbosity_pull: 0.90, noise_sd: 0.95}
+
+scoring:
+  reference_base: 8.20   # score a judge gives a clean reference answer
+  penalty_scale:  5.00   # max points a fully-detected degradation costs
+  tie_threshold:  0.18   # |latent difference| below this yields "tie"
+  scale_min: 1.0
+  scale_max: 10.0
+
+# Reported (not slept) wall-clock model, used by the cost/latency experiment.
+# ttft_ms = time to first token; tok_per_s = decode throughput.
+latency:
+  gemini-flash: {ttft_ms: 420, tok_per_s: 180,  jitter: 0.22}
+  llama70b:     {ttft_ms: 210, tok_per_s: 480,  jitter: 0.18}
+  qwen27b:      {ttft_ms: 240, tok_per_s: 210,  jitter: 0.30}
+  gptoss20b:    {ttft_ms: 200, tok_per_s: 520,  jitter: 0.20}
+  gemini-lite:  {ttft_ms: 300, tok_per_s: 260,  jitter: 0.20}
+  nemotron9b:   {ttft_ms: 900, tok_per_s: 60,   jitter: 0.40}
+  glm47:        {ttft_ms: 220, tok_per_s: 600,  jitter: 0.18}
+  local3b:      {ttft_ms: 120, tok_per_s: 60,   jitter: 0.40}
