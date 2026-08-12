@@ -35,10 +35,14 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     JUDGEGUARD_PROVIDER_MODE=auto \
     JUDGEGUARD_CACHE_DIR=/tmp/judgeguard-cache \
+    HOME=/home/judge \
     JUDGEGUARD_GUARD_P99_BUDGET_MS=150 \
     PORT=8080
 
-RUN useradd --create-home --uid 10001 judge
+# uid 1000: Hugging Face Spaces run containers as user 1000 and mount /data for
+# that uid. Anything else and a Space that writes to disk fails with a
+# permission error that looks like an application bug.
+RUN useradd --create-home --uid 1000 judge
 WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv

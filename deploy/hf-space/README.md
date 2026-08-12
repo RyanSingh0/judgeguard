@@ -12,6 +12,12 @@ short_description: Measuring LLM judge reliability, served as a sub-150ms guardr
 
 # JudgeGuard — can you trust the judge?
 
+**Two paths, deliberately not the same product.** `POST /guard` is inline: the distilled
+classifier, no network call inside the request, a hard p99 ≤ 150 ms budget. `POST /evaluate` is
+asynchronous: the full LLM judge across four model families, returning its score **and that
+judge's measured reliability** — how often it is wrong, on which error class, and how often it
+contradicts itself.
+
 Everyone building with LLMs uses an LLM to grade the output. Almost nobody measures whether the
 grader is any good.
 

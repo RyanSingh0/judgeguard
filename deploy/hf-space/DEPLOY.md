@@ -23,9 +23,18 @@ guardrail is so cheap it runs in your browser"*.
 ### Build
 
 ```bash
-make site        # export model → assemble site/ → run the parity test
-make site-serve  # preview at http://localhost:8000
+uv run python scripts/export_web_model.py
+uv run python scripts/build_site.py
+node site/parity.test.js          # optional locally; runs in CI
 ```
+
+(`make site` does the same on macOS/Linux. Windows has no `make`.)
+
+**The charts ship as SVG, not PNG, and that is deliberate.** Hugging Face rejects binary files
+above a size threshold and wants [Xet storage](https://huggingface.co/docs/hub/xet) for them. SVG
+is text, so it pushes over plain git with no Xet and no LFS — and vector charts stay sharp at any
+zoom, which suits the viewer. `build_site.py` deletes stale PNGs from `site/figures/` on each run;
+if any survive, delete them by hand or the push will be rejected.
 
 ### Create the Space
 
@@ -37,30 +46,27 @@ huggingface.co/new-space →
 
 ### Push
 
-`site/README.md` already carries the required frontmatter (`sdk: static`, `app_file: index.html`).
-The Space wants those files at its repo *root*, so push the `site/` subtree:
+`site/README.md` carries the required frontmatter (`sdk: static`, `app_file: index.html`), and the
+Space wants these files at its repo *root*.
+
+**Clone the Space and copy into it.** `git subtree push` fights with the commit Hugging Face
+creates automatically, and the failure modes are unpleasant:
 
 ```bash
-git remote add space https://huggingface.co/spaces/RugFace/judgeguard
-git subtree push --prefix site space main
+cd ..
+git clone https://huggingface.co/spaces/RugFace/judgeguard hf-space
+cd hf-space
+cp -r ../JudgeGuard/site/* .          # PowerShell: Copy-Item -Recurse -Force ..\JudgeGuard\site\* -Destination .
+git add -A
+git commit -m "JudgeGuard: static demo, guardrail runs in-browser"
+git push
 ```
 
-If HF asks for credentials: username `RugFace`, password = an access token from
-huggingface.co/settings/tokens with **write** scope.
+Credentials: username `RugFace`, password = an access token from huggingface.co/settings/tokens
+with **write** scope.
 
-To update later, rebuild and push the subtree again:
-
-```bash
-make site
-git add -A && git commit -m "rebuild static site"
-git subtree push --prefix site space main
-```
-
-If `git subtree push` ever rejects (it can after a force-push), rebuild the branch:
-
-```bash
-git push space `git subtree split --prefix site main`:main --force
-```
+To update later: rebuild in the project, copy across, push. Two independent repos, no subtree, no
+force-push.
 
 ### Verify
 

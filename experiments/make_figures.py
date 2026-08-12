@@ -101,11 +101,20 @@ def _watermark(fig, payload: dict) -> None:
 
 
 def _save(fig, name: str, payload: dict) -> Path:
+    """Write both PNG and SVG.
+
+    PNG is what GitHub renders in the README. SVG is what the static demo ships,
+    for two reasons: it stays sharp at any zoom (the charts are wide and the
+    viewer lets you magnify them), and it is *text*, so it pushes to a Hugging
+    Face Space over plain git without Xet or LFS. Binary assets are rejected
+    there above a size threshold.
+    """
     _watermark(fig, payload)
     p = FIGDIR / name
     fig.savefig(p, bbox_inches="tight", facecolor="white")
+    fig.savefig(p.with_suffix(".svg"), bbox_inches="tight", facecolor="white", format="svg")
     plt.close(fig)
-    print(f"    {rel(p)}")
+    print(f"    {rel(p)}  (+svg)")
     return p
 
 

@@ -112,7 +112,7 @@ def build_summary() -> dict:
             "budget_ms": d10["budget_p99_ms"],
         },
         "judges": d1["judges"],
-        "figures": [{"file": f, "title": t} for f, t in FIGURES],
+        "figures": [{"file": f.replace(".png", ".svg"), "title": t} for f, t in FIGURES],
     }
 
 
@@ -177,11 +177,27 @@ def main() -> None:
         json.dumps(build_examples(), separators=(",", ":")), encoding="utf-8"
     )
 
+    # Remove stale assets first. PNGs left behind here would be pushed to the
+    # Space and rejected: Hugging Face blocks binary files above a size
+    # threshold and wants Xet storage for them.
+    stale = 0
+    for old in figs.glob("*.png"):
+        try:
+            old.unlink()
+            stale += 1
+        except OSError as exc:
+            print(f"    ! could not remove {old.name}: {exc}")
+    if stale:
+        print(f"  removed {stale} stale PNG(s) from site/figures/")
+
+    # SVG, not PNG. Vector stays sharp under the viewer's zoom, and being text it
+    # pushes to a Static Space over plain git -- Hugging Face rejects binaries
+    # above a size threshold and wants Xet storage for them.
     n = 0
     for f, _ in FIGURES:
-        src = RESULTS / "figures" / f
+        src = (RESULTS / "figures" / f).with_suffix(".svg")
         if src.exists():
-            shutil.copy2(src, figs / f)
+            shutil.copy2(src, figs / src.name)
             n += 1
 
     size = sum(p.stat().st_size for p in SITE.rglob("*") if p.is_file())
