@@ -11,7 +11,7 @@ defended as a design decision rather than a budget artefact.
 
 from __future__ import annotations
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done
+from _common import apply_quick_isolation, banner, base_parser, corpus, done, run_main
 
 from judgeguard.agent.rollout import build_trajectories, trajectory_stats
 from judgeguard.data.corpus import corpus_stats
@@ -93,4 +93,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

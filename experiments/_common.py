@@ -38,7 +38,27 @@ def base_parser(description: str) -> argparse.ArgumentParser:
     p.add_argument("--judges", type=str, default="", help="comma-separated judge aliases")
     p.add_argument("--seed", type=int, default=get_settings().seed)
     p.add_argument("--quick", action="store_true", help="tiny run for smoke tests / CI")
+    p.add_argument(
+        "--severities",
+        type=str,
+        default="",
+        help=(
+            "comma-separated severity levels, e.g. '0.5'. Defaults to the full "
+            "0.2/0.5/0.9 sweep. That sweep triples every call count, and only "
+            "experiment 01 plots a severity curve, so the rest can run one mid "
+            "severity without weakening anything they claim."
+        ),
+    )
     return p
+
+
+def severities_from(args: Any, default: tuple[float, ...] | None = None) -> tuple[float, ...]:
+    """Resolve ``--severities``, falling back to the module default."""
+    from judgeguard.degrade.text import SEVERITIES
+
+    if getattr(args, "severities", ""):
+        return tuple(float(s) for s in args.severities.split(",") if s.strip())
+    return default or SEVERITIES
 
 
 def apply_quick_isolation(args: argparse.Namespace) -> argparse.Namespace:
@@ -86,6 +106,38 @@ def done(t0: float, path: Path) -> None:
     print(
         f"    wrote {rel(path)}  ({time.perf_counter() - t0:.1f}s, cache {cache_stats()['hits']} hits)"
     )
+
+
+# Exit code for "stopped cleanly, daily allowance ran out". Separate from 1 so
+# the runner can tell "come back tomorrow" from "this is broken, read the
+# traceback".
+EXIT_QUOTA = 42
+
+
+def run_main(main: Any) -> None:
+    """Wrapper that turns a spent quota into a clean stop instead of a crash.
+
+    Running out of daily allowance is a scheduling fact, not a bug, but it must
+    not write a results file. Half a judge's calls succeeding and the rest
+    failing gives you a JSON file with intervals that look fine and are computed
+    on a truncated sample. Bad outcome for a project about trusting intervals.
+    """
+    from judgeguard.judges.run import JudgeUnavailableError, failure_report
+    from judgeguard.providers.http_base import LIMITER
+
+    try:
+        main()
+    except JudgeUnavailableError as exc:
+        LIMITER.save()
+        print(f"\n    QUOTA STOP: {exc}")
+        print("    No results file was written for this experiment.")
+        for j, s in failure_report()["by_judge"].items():
+            if s["quota_exhausted"]:
+                print(f"      {j}: {s['total_calls']} calls this run before the allowance ran out")
+        print("    Re-run the same command tomorrow; cached work will not be repeated.")
+        sys.exit(EXIT_QUOTA)
+    finally:
+        LIMITER.save()
 
 
 def corpus(n: int, seed: int) -> tuple[list[Item], dict[str, Item]]:

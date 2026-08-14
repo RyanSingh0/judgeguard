@@ -32,15 +32,15 @@ import numpy as np
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from judgeguard.data.load import load_items  # noqa: E402
-from judgeguard.degrade.text import hedging, numeric_swap, omission, verbosity  # noqa: E402
-from judgeguard.distill.features import (  # noqa: E402
+from judgeguard.data.load import load_items
+from judgeguard.degrade.text import hedging, numeric_swap, omission, verbosity
+from judgeguard.distill.features import (
     _STOP,
     FILLER_PHRASES,
     HEDGE_WORDS,
     render_example,
 )
-from judgeguard.distill.train import Student  # noqa: E402
+from judgeguard.distill.train import Student
 
 OUT = REPO / "site" / "model.json"
 COEF_EPS = 1e-12  # anything below this contributes nothing at float32

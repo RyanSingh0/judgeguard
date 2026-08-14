@@ -21,9 +21,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from judgeguard.data.load import load_items  # noqa: E402
-from judgeguard.degrade.text import hedging, numeric_swap, omission, verbosity  # noqa: E402
-from judgeguard.store import json_safe  # noqa: E402
+from judgeguard.data.load import load_items
+from judgeguard.degrade.text import hedging, numeric_swap, omission, verbosity
+from judgeguard.store import json_safe
 
 SITE = REPO / "site"
 RESULTS = REPO / "results"

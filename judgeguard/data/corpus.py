@@ -20,6 +20,7 @@ network access.
 from __future__ import annotations
 
 import random
+from functools import lru_cache
 from typing import Any
 
 from judgeguard.data.schema import Fact, FactKind, Item
@@ -699,21 +700,41 @@ _GENERATORS = {
 }
 
 
-def generate_corpus(n: int = 500, seed: int = 20260731) -> list[Item]:
-    """Deterministic reference corpus, balanced across the ten domains."""
+#: Size of the fixed item pool every experiment draws a prefix of.
+POOL_SIZE = 1000
+
+
+@lru_cache(maxsize=4)
+def _pool(seed: int) -> tuple[Item, ...]:
+    """The corpus, built once per seed.
+
+    Round-robin across domains rather than domain-by-domain, so every prefix
+    stays domain-balanced. That's what makes generate_corpus nested.
+    """
     rng = random.Random(seed)
     items: list[Item] = []
-    per = max(1, n // len(DOMAINS))
-    idx = 0
-    for domain in DOMAINS:
-        for _ in range(per):
-            items.append(_GENERATORS[domain](rng, idx))
-            idx += 1
-    while len(items) < n:
-        domain = DOMAINS[len(items) % len(DOMAINS)]
-        items.append(_GENERATORS[domain](rng, idx))
-        idx += 1
-    return items[:n]
+    for _ in range(POOL_SIZE // len(DOMAINS)):
+        for domain in DOMAINS:
+            items.append(_GENERATORS[domain](rng, len(items)))
+    return tuple(items)
+
+
+def generate_corpus(n: int = 500, seed: int = 20260731) -> list[Item]:
+    """Deterministic reference corpus, balanced across the ten domains.
+
+    Nested by construction: generate_corpus(80) is a prefix of
+    generate_corpus(150). The old version rebuilt the corpus for each n, and
+    since `per = n // 10` changed how the RNG stream got consumed, an 80-item
+    run and a 150-item run used different items that happened to share ids.
+
+    That caused two problems. Comparisons across experiments weren't on the same
+    items even though the write-up assumes they are. And almost everything was a
+    cache miss: a full battery shared 527 hits out of ~64,000 calls. Nesting
+    turns those into hits, which on a free tier decides whether this finishes.
+    """
+    if n > POOL_SIZE:
+        raise ValueError(f"corpus pool holds {POOL_SIZE} items; asked for {n}")
+    return list(_pool(seed)[:n])
 
 
 def corpus_stats(items: list[Item]) -> dict[str, Any]:

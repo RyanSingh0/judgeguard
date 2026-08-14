@@ -25,7 +25,7 @@ import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done
+from _common import apply_quick_isolation, banner, base_parser, corpus, done, run_main
 
 from judgeguard.config import get_settings
 from judgeguard.degrade.text import build_variants
@@ -185,4 +185,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

@@ -17,7 +17,16 @@ from __future__ import annotations
 
 import statistics
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done, resolve_judges
+from _common import (
+    apply_quick_isolation,
+    banner,
+    base_parser,
+    corpus,
+    done,
+    resolve_judges,
+    run_main,
+    severities_from,
+)
 
 from judgeguard.degrade.text import ERROR_DEGRADATIONS, build_variants
 from judgeguard.judges.run import ScoreTask, run_scores
@@ -41,7 +50,12 @@ def main() -> None:
 
     t0 = banner(f"06  self-consistency ({reps} reruns at temperature {args.temperature})")
     items, by_id = corpus(n_items, args.seed)
-    variants = build_variants(items, seed=args.seed, degradations=ERROR_DEGRADATIONS)
+    variants = build_variants(
+        items,
+        seed=args.seed,
+        degradations=ERROR_DEGRADATIONS,
+        severities=severities_from(args),
+    )
     tasks = [
         ScoreTask(
             uid=v.uid,
@@ -149,4 +163,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

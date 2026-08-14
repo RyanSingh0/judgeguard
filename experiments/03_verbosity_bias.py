@@ -12,7 +12,15 @@ actionable ("padding to 2x buys you +0.6 points").
 
 from __future__ import annotations
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done, resolve_judges
+from _common import (
+    apply_quick_isolation,
+    banner,
+    base_parser,
+    corpus,
+    done,
+    resolve_judges,
+    run_main,
+)
 
 from judgeguard.degrade.text import SEVERITIES, verbosity
 from judgeguard.judges.prompts import POINTWISE_CONFIGS
@@ -102,4 +110,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

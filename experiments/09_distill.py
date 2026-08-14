@@ -23,13 +23,13 @@ import random
 from collections import defaultdict
 
 import numpy as np
-from _common import apply_quick_isolation, banner, base_parser, corpus, done
+from _common import apply_quick_isolation, banner, base_parser, corpus, done, run_main
 
 from judgeguard.config import load_registry
 from judgeguard.degrade.text import ERROR_DEGRADATIONS, PROBE_DEGRADATIONS, build_variants
 from judgeguard.distill.features import render_example
 from judgeguard.distill.train import Student
-from judgeguard.judges.run import ScoreTask, run_scores
+from judgeguard.judges.run import ScoreTask, panel, run_scores
 from judgeguard.stats.intervals import bca_ci, paired_bootstrap_diff
 from judgeguard.store import RESULTS_DIR, load, save
 from judgeguard.telemetry import tracking_run
@@ -37,10 +37,16 @@ from judgeguard.telemetry import tracking_run
 ACCEPT_AT = 7.0
 
 
-def pick_teacher(
-    default_judge: str = "gemini-flash", default_config: str = "cot"
-) -> tuple[str, str]:
-    """Best (judge, config) by measured discrimination accuracy, not by reputation."""
+def pick_teacher(default_judge: str | None = None, default_config: str = "cot") -> tuple[str, str]:
+    """Best (judge, config) by measured accuracy, not by reputation.
+
+    Tries the rubric ablation first, then experiment 01, then whichever judge
+    the panel lists first. This used to fall back to the literal string
+    "gemini-flash", which picked a teacher that wasn't even on the panel once
+    the panel changed. Phase 1 skips the ablation on purpose, so the fallback
+    is the normal path here, not an edge case.
+    """
+    fallback = default_judge or panel()[0]
     try:
         ab = load("05_rubric_ablation")
         best = max(
@@ -49,7 +55,15 @@ def pick_teacher(
         )
         return best[0], best[1]
     except FileNotFoundError:
-        return default_judge, default_config
+        pass
+    try:
+        # Phase 1 order: 01 runs before 09, so its accuracy is the best signal
+        # available without the ablation.
+        d1 = load("01_discrimination")
+        best_j = max(d1["per_judge"], key=lambda j: d1["per_judge"][j]["overall_accuracy"]["value"])
+        return best_j, d1.get("config", default_config)
+    except (FileNotFoundError, KeyError, ValueError):
+        return fallback, default_config
 
 
 def main() -> None:
@@ -130,7 +144,11 @@ def main() -> None:
         degs = [deg_of[j.uid] for j in rows]
 
         student = Student(featurizer=args.featurizer, seed=args.seed)
-        report, extra = student.fit(texts, teacher_label, truth)
+        # Stratify by degradation class as well as label, so the fidelity table
+        # below lands on a test set containing every class. Without it the split
+        # can drop one, and then the numeric-substitution vs hedging contrast is
+        # computed from a table with rows missing.
+        report, extra = student.fit(texts, teacher_label, truth, strat_on=degs)
 
         te = np.array(extra["test_indices"])
         p = np.array(extra["test_probabilities"])
@@ -435,4 +453,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

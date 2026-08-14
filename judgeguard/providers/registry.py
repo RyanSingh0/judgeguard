@@ -81,6 +81,13 @@ def complete(
     else:
         provider = _live_provider(spec.provider)
         model_id = spec.id
+        # Seed the limiter from config before the first call. Without this,
+        # Gemini (which reports no rate-limit headers) runs unpaced until it
+        # 429s, and at 5 RPM that's straight away.
+        if spec.rpm or spec.tpm or spec.rpd:
+            from judgeguard.providers.http_base import LIMITER
+
+            LIMITER.bucket(spec.provider, model_id).seed(rpm=spec.rpm, tpm=spec.tpm, rpd=spec.rpd)
     return cached_complete(
         provider,
         prompt,

@@ -1,7 +1,12 @@
-"""Shared HTTP plumbing: retries, backoff, error classification.
+"""HTTP plumbing shared by the providers: pacing, retries, error classification.
 
-Free tiers throttle. A 429 must back off, not fail the run — losing a six-hour
-battery to one rate-limit response is the most expensive bug in this repo.
+Free tiers throttle in two ways and they need different handling. A rate limit
+means "too fast" and the same call works after a wait. A quota means "that's
+your lot for today" and waiting does nothing.
+
+Both come back as a 429, which is how the first live run died. `_classify`
+tells them apart now, and the limiter paces against whatever ceilings the
+provider publishes, so the rate-limit path rarely comes up.
 """
 
 from __future__ import annotations
@@ -17,6 +22,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from judgeguard.config import REPO_ROOT, get_settings
 from judgeguard.providers.base import (
     Completion,
     ProviderError,
@@ -24,10 +30,17 @@ from judgeguard.providers.base import (
     TransientError,
     approx_tokens,
 )
+from judgeguard.providers.limits import Limiter, QuotaExhaustedError, parse_openai_headers
 from judgeguard.telemetry import get_logger
 
 log = get_logger(__name__)
 
+_s = get_settings()
+_state = (_s.cache_dir if _s.cache_dir.is_absolute() else REPO_ROOT / _s.cache_dir) / "limits.json"
+LIMITER = Limiter(_state)
+
+# QuotaExhaustedError is left out on purpose. It isn't retryable, and putting
+# it here would bring back the bug this module exists to fix.
 RETRY = dict(
     retry=retry_if_exception_type((RateLimitError, TransientError, httpx.TransportError)),
     wait=wait_random_exponential(multiplier=1.5, min=1, max=60),
@@ -35,9 +48,72 @@ RETRY = dict(
     reraise=True,
 )
 
+# Substrings that mark a 429 as a spent allowance rather than a burst limit.
+_QUOTA_MARKERS = (
+    "exceeded your current quota",
+    "perday",
+    "per day",
+    "requests per day",
+    "quota_metric",
+    "quotafailure",
+    "daily",
+    "insufficient_quota",
+)
 
-def _classify(resp: httpx.Response) -> None:
+
+def _retry_after(resp: httpx.Response) -> float | None:
+    """Use the provider's own retry hint if it gave one, rather than guessing."""
+    ra = resp.headers.get("retry-after")
+    if ra:
+        try:
+            return float(ra)
+        except ValueError:
+            pass
+    try:
+        body = resp.json()
+    except Exception:
+        return None
+    for d in (body.get("error", {}) or {}).get("details", []) or []:
+        delay = d.get("retryDelay")
+        if isinstance(delay, str) and delay.endswith("s"):
+            try:
+                return float(delay[:-1])
+            except ValueError:
+                pass
+    return None
+
+
+def _is_quota(resp: httpx.Response) -> bool:
+    """Tell "slow down" apart from "come back tomorrow".
+
+    Google puts it in the error body: QuotaFailure details, or a message naming
+    a PerDay metric. OpenAI-compatible providers put it in the headers, where
+    zero remaining requests plus a reset measured in hours means a daily
+    allowance rather than a per-minute window.
+    """
+    text = resp.text[:2000].lower()
+    if any(m in text for m in _QUOTA_MARKERS):
+        return True
+    remaining = resp.headers.get("x-ratelimit-remaining-requests")
+    if remaining is not None:
+        try:
+            if float(remaining) <= 0:
+                from judgeguard.providers.limits import _duration
+
+                reset = _duration(resp.headers.get("x-ratelimit-reset-requests")) or 0
+                return reset > 900
+        except ValueError:
+            pass
+    return False
+
+
+def _classify(resp: httpx.Response, *, model: str = "?") -> None:
     if resp.status_code == 429:
+        if _is_quota(resp):
+            raise QuotaExhaustedError(model, 0, None, "provider reports the allowance is spent")
+        wait = _retry_after(resp)
+        if wait:
+            time.sleep(min(wait, 60.0))
         raise RateLimitError(f"429 rate limited: {resp.text[:300]}")
     if resp.status_code >= 500:
         raise TransientError(f"{resp.status_code}: {resp.text[:300]}")
@@ -83,15 +159,33 @@ class OpenAICompatProvider:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        bucket = LIMITER.bucket(self.name, model)
+        reserved = bucket.estimate(approx_tokens(prompt) + approx_tokens(system or ""), max_tokens)
+        bucket.acquire(reserved)
         t0 = time.perf_counter()
         resp = self._client.post(
             f"{self.base_url}/chat/completions", headers=self._headers(), json=body
         )
-        _classify(resp)
+        limits = parse_openai_headers(resp.headers)
+        bucket.observe(rpm=limits["rpm"], tpm=limits["tpm"], rpd=limits["rpd"])  # type: ignore[arg-type]
+        try:
+            _classify(resp, model=f"{self.name}:{model}")
+        except QuotaExhaustedError:
+            bucket.mark_exhausted()
+            LIMITER.save()
+            raise
         data = resp.json()
         dt = (time.perf_counter() - t0) * 1000
         text = data["choices"][0]["message"]["content"] or ""
         usage = data.get("usage") or {}
+        bucket.settle(
+            reserved,
+            usage.get("total_tokens")
+            or (
+                usage.get("prompt_tokens", approx_tokens(prompt))
+                + usage.get("completion_tokens", approx_tokens(text))
+            ),
+        )
         return Completion(
             text=text,
             model_requested=model,
@@ -131,29 +225,56 @@ class GeminiProvider:
         }
         if system:
             body["systemInstruction"] = {"parts": [{"text": system}]}
+        bucket = LIMITER.bucket(self.name, model)
+        reserved = bucket.estimate(approx_tokens(prompt) + approx_tokens(system or ""), max_tokens)
+        bucket.acquire(reserved)
         t0 = time.perf_counter()
         resp = self._client.post(
             f"{self.base_url}/models/{model}:generateContent",
             headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key},
             json=body,
         )
-        _classify(resp)
+        try:
+            _classify(resp, model=f"gemini:{model}")
+        except QuotaExhaustedError:
+            bucket.mark_exhausted()
+            LIMITER.save()
+            raise
         data = resp.json()
         dt = (time.perf_counter() - t0) * 1000
+        # A Gemini candidate doesn't always carry content. If a reasoning model
+        # burns maxOutputTokens on its thinking block, or a safety filter stops
+        # the response, you get a finishReason and no "content" key. Indexing
+        # that blindly raises KeyError in a worker thread and kills the run.
         cands = data.get("candidates") or []
         text = ""
+        finish = "EMPTY"
         if cands:
-            text = "".join(p.get("text", "") for p in cands[0]["content"].get("parts", []))
+            finish = cands[0].get("finishReason", "STOP")
+            parts = (cands[0].get("content") or {}).get("parts") or []
+            text = "".join(part.get("text", "") for part in parts)
+        elif data.get("promptFeedback", {}).get("blockReason"):
+            finish = "BLOCKED:" + data["promptFeedback"]["blockReason"]
         usage = data.get("usageMetadata") or {}
+        # Gemini counts thinking tokens separately from candidate tokens and
+        # bills for both. On a real judge call I got candidatesTokenCount=5 and
+        # thoughtsTokenCount=208. Reading only the first understates a reasoning
+        # judge's output by about 40x, and that feeds straight into exp 07.
+        completion = usage.get("candidatesTokenCount", 0) + usage.get("thoughtsTokenCount", 0)
+        bucket.settle(
+            reserved,
+            usage.get("totalTokenCount")
+            or (usage.get("promptTokenCount", approx_tokens(prompt)) + completion),
+        )
         return Completion(
             text=text,
             model_requested=model,
             model_served=data.get("modelVersion", model),
             prompt_tokens=usage.get("promptTokenCount", approx_tokens(prompt)),
-            completion_tokens=usage.get("candidatesTokenCount", approx_tokens(text)),
+            completion_tokens=completion or approx_tokens(text),
             latency_ms=dt,
             provider=self.name,
-            finish_reason=(cands[0].get("finishReason", "STOP") if cands else "EMPTY"),
+            finish_reason=finish,
         )
 
 
@@ -186,7 +307,7 @@ class OllamaProvider:
         }
         t0 = time.perf_counter()
         resp = self._client.post(f"{self.base_url}/api/generate", json=body)
-        _classify(resp)
+        _classify(resp, model=f"ollama:{model}")
         data = resp.json()
         dt = (time.perf_counter() - t0) * 1000
         text = data.get("response", "")
@@ -201,4 +322,10 @@ class OllamaProvider:
         )
 
 
-__all__ = ["GeminiProvider", "OllamaProvider", "OpenAICompatProvider"]
+__all__ = [
+    "LIMITER",
+    "GeminiProvider",
+    "OllamaProvider",
+    "OpenAICompatProvider",
+    "QuotaExhaustedError",
+]

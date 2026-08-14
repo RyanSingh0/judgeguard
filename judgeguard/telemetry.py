@@ -8,6 +8,7 @@ a portfolio repo that only runs after a 2 GB install does not get run.
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import logging
 import os
 from collections.abc import Iterator
@@ -97,11 +98,14 @@ def tracking_run(
 ) -> Iterator[Any]:
     """MLflow run if MLflow is installed and MLFLOW_TRACKING_URI is set; else no-op."""
     uri = os.getenv("MLFLOW_TRACKING_URI", "")
-    try:
-        import mlflow  # type: ignore
-    except Exception:
+    # importlib rather than a bare import: a failed `import mlflow` inside a
+    # generator shows up as chained context on any later exception, which makes
+    # unrelated tracebacks look like a missing-dependency problem.
+    if importlib.util.find_spec("mlflow") is None:
         yield _NullRun()
         return
+    import mlflow  # type: ignore
+
     if uri:
         mlflow.set_tracking_uri(uri)
     mlflow.set_experiment(experiment)

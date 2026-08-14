@@ -19,7 +19,15 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done, resolve_judges
+from _common import (
+    apply_quick_isolation,
+    banner,
+    base_parser,
+    corpus,
+    done,
+    resolve_judges,
+    run_main,
+)
 
 from judgeguard.config import load_registry
 from judgeguard.data.generate import generate_response
@@ -136,4 +144,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

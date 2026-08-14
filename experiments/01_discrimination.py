@@ -17,7 +17,15 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done, resolve_judges
+from _common import (
+    apply_quick_isolation,
+    banner,
+    base_parser,
+    corpus,
+    done,
+    resolve_judges,
+    run_main,
+)
 
 from judgeguard.degrade.text import ERROR_DEGRADATIONS, SEVERITIES, build_variants
 from judgeguard.judges.run import ScoreTask, run_scores
@@ -158,4 +166,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

@@ -23,20 +23,32 @@ providers:
     base_url: https://generativelanguage.googleapis.com/v1beta
     env_key: GEMINI_API_KEY
     models:
+      # Off the panel while I'm on the free tier. AI Studio on 2026-08-13 shows
+      # 5 RPM and the daily allowance already maxed. At 5 requests a minute one
+      # phase of the battery takes ~15 hours of wall clock even ignoring the
+      # daily cap. Put it back once there's a billing account.
       - id: gemini-3.6-flash
         alias: gemini-flash
         family: gemini
         tier: frontier
         reasoning: true          # spends tokens before committing to a score
+        rpm: 5
+        tpm: 250000
         usd_per_mtok_in: 0.0
         usd_per_mtok_out: 0.0
         list_usd_per_mtok_in: 0.30
         list_usd_per_mtok_out: 2.50
-      # Verified working failover: served as gemini-3.5-flash-lite, ~600 ms.
+      # The gemini seat on the panel. Comes back as gemini-3.5-flash-lite,
+      # ~600 ms. 15 RPM (3x the bigger one), 250K TPM, daily allowance hardly
+      # used. Not a reasoning model: checked live, it writes a short rationale
+      # and a parseable SCORE in 63 output tokens with no thinking block. About
+      # a quarter of what 3.6 Flash spends saying the same thing.
       - id: gemini-flash-lite-latest
         alias: gemini-lite
         family: gemini
         tier: frontier
+        rpm: 15
+        tpm: 250000
         usd_per_mtok_in: 0.0
         usd_per_mtok_out: 0.0
         list_usd_per_mtok_in: 0.10
@@ -46,10 +58,16 @@ providers:
     base_url: https://api.groq.com/openai/v1
     env_key: GROQ_API_KEY
     models:
+      # These Groq limits are fallbacks only. Every Groq response carries
+      # x-ratelimit-* headers and those override them at runtime. Read live on
+      # 2026-08-13: limit-requests 1000 with an 86.4s refill interval, so 1,000
+      # per day rather than per minute (86.4 x 1000 = 86,400 seconds).
       - id: llama-3.3-70b-versatile
         alias: llama70b
         family: llama
         tier: open-weight
+        rpd: 1000
+        tpm: 12000
         usd_per_mtok_in: 0.0
         usd_per_mtok_out: 0.0
         list_usd_per_mtok_in: 0.59
@@ -59,6 +77,8 @@ providers:
         family: qwen
         tier: open-weight
         reasoning: true          # long <think> block; needs ~512 tokens
+        rpd: 1000
+        tpm: 8000
         usd_per_mtok_in: 0.0
         usd_per_mtok_out: 0.0
         list_usd_per_mtok_in: 0.29
@@ -68,6 +88,8 @@ providers:
         family: gpt-oss
         tier: open-weight
         reasoning: true
+        rpd: 1000
+        tpm: 8000
         usd_per_mtok_in: 0.0
         usd_per_mtok_out: 0.0
         list_usd_per_mtok_in: 0.10
@@ -116,9 +138,14 @@ providers:
         list_usd_per_mtok_in: 0.0
         list_usd_per_mtok_out: 0.0
 
-# The judge panel, in reporting order. Four distinct families, three providers.
-panel: [gemini-flash, llama70b, qwen27b, gptoss20b]
+# The judge panel, in reporting order. Four families, three providers.
+# Note the gemini seat is gemini-lite, not gemini-flash. 3.6 Flash gets 5 RPM on
+# the free tier with the daily allowance already spent, so it can't carry a
+# 4,500-call phase. Flash-Lite runs at 15 RPM and doesn't burn tokens thinking,
+# and I keep the family and the frontier/open-weight contrast either way.
+# One word to change back later.
+panel: [gemini-lite, llama70b, qwen27b, gptoss20b]
 
 # Response generators for the self-enhancement probe. Same set: each judge must
 # see output from its own family and from three others.
-generators: [gemini-flash, llama70b, qwen27b, gptoss20b]
+generators: [gemini-lite, llama70b, qwen27b, gptoss20b]

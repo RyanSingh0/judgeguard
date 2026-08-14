@@ -30,6 +30,33 @@ from sklearn.model_selection import train_test_split
 from judgeguard.distill.features import get_featurizer, render_example
 
 
+def _stratification_key(groups: list[str] | None, y: np.ndarray) -> np.ndarray:
+    """Composite (group, label) strata, coarsened if a class is too small.
+
+    train_test_split won't stratify when a class has fewer members than there
+    are splits. So try the finest key first and fall back to coarser ones rather
+    than crashing. A coarser split is a weaker guarantee, not a broken one.
+    """
+    if groups is None:
+        return y
+    # Three splits happen in a row, so a class needs enough members to come out
+    # of all of them with at least one row on each side.
+    min_per_class = 6
+    # Coarsen instead of folding. Take the finest key every class can support.
+    # Folding rare classes into a shared bucket misses the point, since the
+    # folded class is the one about to vanish from the test split.
+    candidates = [
+        np.array([f"{g}|{int(lbl)}" for g, lbl in zip(groups, y, strict=True)]),
+        np.asarray(groups),
+        y,
+    ]
+    for key in candidates:
+        _, counts = np.unique(key, return_counts=True)
+        if counts.min() >= min_per_class:
+            return key
+    return y
+
+
 @dataclass
 class StudentReport:
     featurizer: str
@@ -104,6 +131,7 @@ class Student:
         *,
         test_size: float = 0.20,
         calibration_size: float = 0.20,
+        strat_on: list[str] | None = None,
     ) -> tuple[StudentReport, dict[str, Any]]:
         """Fit on the teacher's labels, then recalibrate against free ground truth.
 
@@ -127,12 +155,20 @@ class Student:
         t_all = np.asarray(truth if truth is not None else labels, dtype=int)
         idx = np.arange(len(labels))
 
+        # Stratify on (degradation, label), not the label alone.
+        #
+        # The claim about the student is per-degradation: blind to numeric
+        # substitution, catches hedging. That's computed on the test split, so
+        # stratifying only by accept/reject can drop a degradation class
+        # entirely. I saw hedging, topic_drift and reference all missing from a
+        # 20% split, which isn't a smaller sample, it's a missing row.
+        strat = _stratification_key(strat_on, y_all)
         i_fit, i_test = train_test_split(
-            idx, test_size=test_size, random_state=self.seed, stratify=y_all
+            idx, test_size=test_size, random_state=self.seed, stratify=strat
         )
         rel_cal = calibration_size / (1.0 - test_size)
         i_tr, i_cal = train_test_split(
-            i_fit, test_size=rel_cal, random_state=self.seed, stratify=y_all[i_fit]
+            i_fit, test_size=rel_cal, random_state=self.seed, stratify=strat[i_fit]
         )
 
         base = LogisticRegression(max_iter=2000, C=1.0, solver="liblinear")

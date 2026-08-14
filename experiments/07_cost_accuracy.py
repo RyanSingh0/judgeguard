@@ -16,7 +16,7 @@ Depends on: 01_discrimination.json, 02_position_bias.json.
 
 from __future__ import annotations
 
-from _common import apply_quick_isolation, banner, base_parser, done
+from _common import apply_quick_isolation, banner, base_parser, done, run_main
 
 from judgeguard.config import load_registry
 from judgeguard.stats.intervals import bca_ci, paired_bootstrap_diff
@@ -156,4 +156,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

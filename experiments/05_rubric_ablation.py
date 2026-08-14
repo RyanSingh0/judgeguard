@@ -17,7 +17,16 @@ from __future__ import annotations
 
 from itertools import combinations
 
-from _common import apply_quick_isolation, banner, base_parser, corpus, done, resolve_judges
+from _common import (
+    apply_quick_isolation,
+    banner,
+    base_parser,
+    corpus,
+    done,
+    resolve_judges,
+    run_main,
+    severities_from,
+)
 
 from judgeguard.degrade.text import ERROR_DEGRADATIONS, build_variants
 from judgeguard.judges.prompts import POINTWISE_CONFIGS
@@ -37,7 +46,12 @@ def main() -> None:
 
     t0 = banner("05  rubric ablation: vague vs rubric vs chain-of-thought")
     items, by_id = corpus(n_items, args.seed)
-    variants = build_variants(items, seed=args.seed, degradations=ERROR_DEGRADATIONS)
+    variants = build_variants(
+        items,
+        seed=args.seed,
+        degradations=ERROR_DEGRADATIONS,
+        severities=severities_from(args),
+    )
 
     correct: dict[tuple[str, str], list[int]] = {}
     tokens: dict[tuple[str, str], int] = {}
@@ -132,4 +146,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

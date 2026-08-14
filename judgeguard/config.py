@@ -92,6 +92,14 @@ class ModelSpec(BaseModel):
     #: small max_tokens these models spend the entire budget reasoning and return
     #: an empty string -- which looks like a broken provider, not a token limit.
     reasoning: bool = False
+    # Free-tier ceilings, used only where the provider doesn't report its own.
+    # Groq and OpenRouter send x-ratelimit-* on every response and those win.
+    # Google sends nothing, so for Gemini this is the only pacing signal there
+    # is. Read them off https://aistudio.google.com/rate-limit. They're per
+    # project and shift with your usage tier, so treat them as a snapshot.
+    rpm: float | None = None
+    tpm: float | None = None
+    rpd: int | None = None
     usd_per_mtok_in: float = 0.0
     usd_per_mtok_out: float = 0.0
     list_usd_per_mtok_in: float = 0.0

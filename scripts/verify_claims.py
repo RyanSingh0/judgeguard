@@ -13,12 +13,17 @@ Run it after any experiment rerun. `make verify`, and it gates CI.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-R = REPO / "results"
+# Every other entry point honours JUDGEGUARD_RESULTS_DIR. This one didn't, so
+# pointing the battery at a scratch dir and then checking claims compared the
+# prose against the old committed results and reported everything green.
+_env = os.getenv("JUDGEGUARD_RESULTS_DIR", "")
+R = (Path(_env) if Path(_env).is_absolute() else REPO / _env) if _env else REPO / "results"
 GREEN, RED, RESET = "\033[32m", "\033[31m", "\033[0m"
 
 
@@ -41,6 +46,18 @@ def main() -> int:
     d7, d8 = load("07_cost_accuracy"), load("08_trajectory_blindness")
     d9, d10 = load("09_distill"), load("10_latency_bench")
     J = d1["judges"]
+
+    # Work out best and worst rather than naming them. These were the literal
+    # aliases "gemini-flash" and "gptoss20b", so as soon as the panel changed
+    # the checker either raised KeyError or, worse, quietly verified the wrong
+    # judge. This script exists to catch quoted numbers drifting from the
+    # measurement, and a hardcoded judge lets that drift straight through.
+    _acc = {j: d1["per_judge"][j]["overall_accuracy"]["value"] for j in J}
+    BEST = max(_acc, key=lambda j: _acc[j])
+    WORST = min(_acc, key=lambda j: _acc[j])
+    _inc = {j: d2["per_judge"][j]["inconsistency_rate"]["value"] for j in J}
+    MOST_CONSISTENT = min(_inc, key=lambda j: _inc[j])
+    LEAST_CONSISTENT = max(_inc, key=lambda j: _inc[j])
 
     claims: list[tuple[str, str, bool]] = []
 
@@ -65,8 +82,8 @@ def main() -> int:
         f"{100 * min(a['value'] for a in acc.values()):.1f}-{100 * max(a['value'] for a in acc.values()):.1f}%",
         "81.7-95.4%",
     )
-    claim("best judge accuracy", pc(acc["gemini-flash"]), "95.4% [94.9, 95.8]")
-    claim("worst judge accuracy", pc(acc["gptoss20b"]), "81.7% [80.8, 82.6]")
+    claim(f"best judge accuracy ({BEST})", pc(acc[BEST]), "95.4% [94.9, 95.8]")
+    claim(f"worst judge accuracy ({WORST})", pc(acc[WORST]), "81.7% [80.8, 82.6]")
     ns = {j: d1["per_judge"][j]["by_degradation"]["numeric_swap"]["value"] for j in J}
     claim(
         "numeric_swap range",
@@ -84,13 +101,13 @@ def main() -> int:
         "True",
     )
     claim(
-        "best judge numeric_swap@0.2",
-        pc(d1["per_judge"]["gemini-flash"]["by_degradation_severity"]["numeric_swap@0.2"]),
+        f"best judge numeric_swap@0.2 ({BEST})",
+        pc(d1["per_judge"][BEST]["by_degradation_severity"]["numeric_swap@0.2"]),
         "66.2% [62.0, 70.4]",
     )
     claim(
-        "worst judge numeric_swap@0.2",
-        pc(d1["per_judge"]["gptoss20b"]["by_degradation_severity"]["numeric_swap@0.2"]),
+        f"worst judge numeric_swap@0.2 ({WORST})",
+        pc(d1["per_judge"][WORST]["by_degradation_severity"]["numeric_swap@0.2"]),
         "54.8% [50.4, 59.0]",
     )
     td = {j: d1["per_judge"][j]["by_degradation"]["topic_drift"]["value"] for j in J}
@@ -102,17 +119,25 @@ def main() -> int:
 
     # ---------------------------------------------------------- 02 position
     inc = {j: d2["per_judge"][j]["inconsistency_rate"] for j in J}
-    claim("min order disagreement", pc(inc["gemini-flash"]), "11.6% [10.6, 12.6]")
-    claim("max order disagreement", pc(inc["gptoss20b"]), "32.3% [30.8, 33.8]")
+    claim(
+        f"min order disagreement ({MOST_CONSISTENT})",
+        pc(inc[MOST_CONSISTENT]),
+        "11.6% [10.6, 12.6]",
+    )
+    claim(
+        f"max order disagreement ({LEAST_CONSISTENT})",
+        pc(inc[LEAST_CONSISTENT]),
+        "32.3% [30.8, 33.8]",
+    )
     inf = {j: d2["per_judge"][j]["fixed_order_inflation"] for j in J}
     claim(
-        "min fixed-order inflation",
-        f"{100 * inf['gemini-flash']['diff']:.1f} [{100 * inf['gemini-flash']['lo']:.1f}, {100 * inf['gemini-flash']['hi']:.1f}]",
+        f"min fixed-order inflation ({MOST_CONSISTENT})",
+        f"{100 * inf[MOST_CONSISTENT]['diff']:.1f} [{100 * inf[MOST_CONSISTENT]['lo']:.1f}, {100 * inf[MOST_CONSISTENT]['hi']:.1f}]",
         "3.9 [3.3, 4.6]",
     )
     claim(
-        "max fixed-order inflation",
-        f"{100 * inf['gptoss20b']['diff']:.1f} [{100 * inf['gptoss20b']['lo']:.1f}, {100 * inf['gptoss20b']['hi']:.1f}]",
+        f"max fixed-order inflation ({LEAST_CONSISTENT})",
+        f"{100 * inf[LEAST_CONSISTENT]['diff']:.1f} [{100 * inf[LEAST_CONSISTENT]['lo']:.1f}, {100 * inf[LEAST_CONSISTENT]['hi']:.1f}]",
         "12.1 [11.1, 13.2]",
     )
     drops = [
@@ -207,11 +232,13 @@ def main() -> int:
     )
     claim(
         "best argument detection",
-        pc(wa["gemini-flash"]["detection_accuracy"]),
+        pc(max(wa.values(), key=lambda v: v["detection_accuracy"]["value"])["detection_accuracy"]),
         "62.8% [55.6, 69.4]",
     )
     claim(
-        "worst argument detection", pc(wa["gptoss20b"]["detection_accuracy"]), "35.6% [28.9, 42.8]"
+        "worst argument detection",
+        pc(min(wa.values(), key=lambda v: v["detection_accuracy"]["value"])["detection_accuracy"]),
+        "35.6% [28.9, 42.8]",
     )
     ph = {
         j: d8["per_judge"][j]["by_degradation"]["phantom_tool"]["miss_rate"] for j in d8["judges"]

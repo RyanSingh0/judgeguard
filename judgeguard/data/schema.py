@@ -147,6 +147,9 @@ class Judgment(BaseModel):
     cost_usd: float = 0.0
     simulated: bool = False
     replicate: int = 0
+    #: Set when the provider call failed after all retries. The item is excluded
+    #: from accuracy rather than silently counted as a miss.
+    error: str = ""
 
 
 __all__ = [
