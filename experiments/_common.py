@@ -77,10 +77,48 @@ def apply_quick_isolation(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 
+def exhausted_today() -> set[str]:
+    """Panel aliases whose daily allowance is already gone.
+
+    Read from the persisted limiter state, so it survives across runs and across
+    the separate processes each experiment runs in.
+    """
+    from judgeguard.providers.http_base import LIMITER
+    from judgeguard.providers.registry import resolve
+
+    report = LIMITER.report()
+    out: set[str] = set()
+    for alias in load_registry().panel:
+        spec = resolve(alias)
+        s = report.get(f"{spec.provider}:{spec.id}", {})
+        if s.get("exhausted_today") or s.get("remaining_today") == 0:
+            out.add(alias)
+    return out
+
+
 def resolve_judges(arg: str) -> list[str]:
+    """The panel, minus anyone who has no allowance left today.
+
+    Learned this the hard way on the first phase-1 run. gemini-lite sits first in
+    the panel and ran out after 493 calls, which aborted experiment 01 before the
+    three Groq judges were touched at all. They had 1,000 calls each sitting
+    unused. One judge's small quota was blocking three healthy ones.
+
+    So skip the exhausted judge and run the rest. The results file records who
+    was skipped, and because every call is cached, tomorrow's run refills the
+    gap and rewrites the file complete for a few hundred new calls.
+    """
     if arg:
         return [a.strip() for a in arg.split(",") if a.strip()]
-    return list(load_registry().panel)
+    panel = list(load_registry().panel)
+    dead = exhausted_today()
+    live = [j for j in panel if j not in dead]
+    if dead:
+        print(f"    SKIPPING (no allowance left today): {', '.join(sorted(dead))}")
+        print(f"    running with {len(live)} of {len(panel)} judges; re-run tomorrow to fill in")
+    if not live:
+        raise SystemExit(EXIT_QUOTA)
+    return live
 
 
 def banner(name: str) -> float:
@@ -114,27 +152,79 @@ def done(t0: float, path: Path) -> None:
 EXIT_QUOTA = 42
 
 
-def run_main(main: Any) -> None:
-    """Wrapper that turns a spent quota into a clean stop instead of a crash.
+def record_partial(experiment: str, skipped: list[str]) -> None:
+    """Note which judges are missing from a results file, where I'll see it.
 
-    Running out of daily allowance is a scheduling fact, not a bug, but it must
-    not write a results file. Half a judge's calls succeeding and the rest
-    failing gives you a JSON file with intervals that look fine and are computed
-    on a truncated sample. Bad outcome for a project about trusting intervals.
+    A results file with three of four judges is fine as long as it is obviously
+    three of four. It is not fine if it renders a figure that looks complete.
     """
-    from judgeguard.judges.run import JudgeUnavailableError, failure_report
+    import json
+
+    from judgeguard.store import RESULTS_DIR
+
+    path = RESULTS_DIR / "_partial.json"
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            data = {}
+    if skipped:
+        data[experiment] = sorted(skipped)
+    else:
+        data.pop(experiment, None)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if data:
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    elif path.exists():
+        path.unlink()
+
+
+def run_main(main: Any) -> None:
+    """Wrapper that handles a judge running out of allowance mid-experiment.
+
+    First phase-1 run taught me this. gemini-lite ran dry 493 calls into
+    experiment 01 and the whole thing stopped, before the three Groq judges had
+    made a single call. They had 1,000 each going spare.
+
+    So when a judge dies partway, mark it, throw away the partial work in memory
+    and run the experiment again without it. The rerun is nearly free because
+    every completed call is cached. Tomorrow's run picks the judge back up and
+    rewrites the file with the full panel.
+
+    Only stops outright when nobody has allowance left.
+    """
+    from judgeguard.judges.run import JudgeUnavailableError, failure_report, reset_failures
     from judgeguard.providers.http_base import LIMITER
 
+    name = Path(sys.argv[0]).stem
     try:
-        main()
-    except JudgeUnavailableError as exc:
+        try:
+            main()
+            record_partial(name, sorted(exhausted_today() & set(load_registry().panel)))
+        except JudgeUnavailableError as exc:
+            LIMITER.save()
+            print(f"\n    {exc}")
+            dead = sorted(exhausted_today())
+            print(f"    Retrying this experiment without: {', '.join(dead)}")
+            print("    Everything already measured is cached, so this costs almost nothing.\n")
+            reset_failures()
+            main()
+            record_partial(name, dead)
+            print(f"\n    PARTIAL: this file has {len(dead)} judge(s) missing ({', '.join(dead)}).")
+            print("    Re-run tomorrow to fill them in; the rest will come from cache.")
+    except SystemExit as exc:
+        if exc.code == EXIT_QUOTA:
+            print("\n    Every judge is out of allowance for today. Nothing more to do.")
+            print("    Re-run tomorrow; completed work is cached.")
+        raise
+    except JudgeUnavailableError:
+        # Second judge died during the retry. Stop rather than spiral.
         LIMITER.save()
-        print(f"\n    QUOTA STOP: {exc}")
-        print("    No results file was written for this experiment.")
-        for j, s in failure_report()["by_judge"].items():
-            if s["quota_exhausted"]:
-                print(f"      {j}: {s['total_calls']} calls this run before the allowance ran out")
-        print("    Re-run the same command tomorrow; cached work will not be repeated.")
+        report = failure_report()["by_judge"]
+        spent = {j: s["total_calls"] for j, s in report.items() if s["quota_exhausted"]}
+        print(f"\n    QUOTA STOP: another judge ran out during the retry ({spent}).")
+        print("    No results file written. Re-run tomorrow.")
         sys.exit(EXIT_QUOTA)
     finally:
         LIMITER.save()

@@ -195,3 +195,37 @@ class TestReservationSizing:
         b.settle(r, 900)
         assert b.day_tokens == 900
         assert sum(n for _, n in b._tok_times) == 900
+
+
+class TestExhaustionIsDayScoped:
+    """Hitting the wall tells you what was left, not what the cap is."""
+
+    def test_mark_exhausted_does_not_invent_a_permanent_cap(self):
+        """On 2026-08-14 gemini-flash-lite stopped at 284 because preflight and
+        some manual testing had already eaten into the day. Writing 284 as the
+        rpd would have capped every future run at 284.
+        """
+        b = _Bucket(model="gemini:flash-lite")
+        for _ in range(5):
+            b.acquire(10)
+        b.mark_exhausted()
+        assert b.rpd is None
+        assert b.snapshot()["exhausted_today"] is True
+        assert b.snapshot()["remaining_today"] == 0
+        with pytest.raises(QuotaExhaustedError):
+            b.acquire(10)
+
+    def test_exhaustion_clears_at_the_reset_boundary(self):
+        b = _Bucket(model="gemini:flash-lite")
+        b.mark_exhausted()
+        b.exhausted_day = "1999-01-01"  # pretend it was yesterday
+        b.day = "1999-01-01"
+        b.acquire(10)  # must not raise
+        assert b.day_requests == 1
+
+    def test_exhaustion_survives_a_restart(self, tmp_path):
+        path = tmp_path / "limits.json"
+        a = Limiter(path)
+        a.bucket("gemini", "flash-lite").mark_exhausted()
+        a.save()
+        assert Limiter(path).bucket("gemini", "flash-lite").snapshot()["exhausted_today"] is True

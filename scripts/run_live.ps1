@@ -120,10 +120,13 @@ foreach ($s in $steps) {
   $code = $LASTEXITCODE
 
   if ($code -eq $EXIT_QUOTA) {
+    # Exit 42 now means EVERY judge is out for the day. A single judge running
+    # dry no longer stops anything: the experiment retries without it, writes a
+    # partial file and records the gap in results/_partial.json.
     $quotaStopped = $true
     Write-Host ""
-    Write-Host "  Daily allowance reached at '$name'. This is expected on a free tier." -ForegroundColor Yellow
-    Write-Host "  Re-run this exact command tomorrow; everything already measured is cached." -ForegroundColor Yellow
+    Write-Host "  All judges are out of allowance for today. Stopping at '$name'." -ForegroundColor Yellow
+    Write-Host "  Re-run this exact command tomorrow; everything measured is cached." -ForegroundColor Yellow
     break
   }
   if ($code -ne 0) {

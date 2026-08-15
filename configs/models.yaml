@@ -139,13 +139,16 @@ providers:
         list_usd_per_mtok_out: 0.0
 
 # The judge panel, in reporting order. Four families, three providers.
-# Note the gemini seat is gemini-lite, not gemini-flash. 3.6 Flash gets 5 RPM on
-# the free tier with the daily allowance already spent, so it can't carry a
-# 4,500-call phase. Flash-Lite runs at 15 RPM and doesn't burn tokens thinking,
-# and I keep the family and the frontier/open-weight contrast either way.
-# One word to change back later.
-panel: [gemini-lite, llama70b, qwen27b, gptoss20b]
+# The gemini seat is gemini-lite, not gemini-flash: 3.6 Flash gets 5 RPM on the
+# free tier with the daily allowance already spent, so it can't carry a
+# 4,500-call phase. Flash-Lite runs at 15 RPM and doesn't burn tokens thinking.
+#
+# gemini-lite is LAST on purpose. Measured 2026-08-14: its free-tier daily
+# allowance is ~300 calls against Groq's 1,000 per model. Judges run in panel
+# order, so putting the smallest allowance first meant it ran dry 493 calls into
+# experiment 01 and stopped the run before the Groq judges made a single call.
+panel: [llama70b, qwen27b, gptoss20b, gemini-lite]
 
 # Response generators for the self-enhancement probe. Same set: each judge must
 # see output from its own family and from three others.
-generators: [gemini-lite, llama70b, qwen27b, gptoss20b]
+generators: [llama70b, qwen27b, gptoss20b, gemini-lite]

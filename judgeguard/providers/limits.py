@@ -87,6 +87,9 @@ class _Bucket:
     # Recent per-call token totals, used to size the next reservation.
     _observed: list[int] = field(default_factory=list)
     day: str = field(default_factory=_pacific_day)
+    # Set when the provider itself said the allowance is gone. Day-scoped, so it
+    # clears on its own at the reset boundary.
+    exhausted_day: str = ""
     day_requests: int = 0
     day_tokens: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -152,6 +155,10 @@ class _Bucket:
         while True:
             with self.lock:
                 self._roll_day()
+                if self.exhausted_day == self.day:
+                    raise QuotaExhaustedError(
+                        self.model, self.day_requests, None, "midnight Pacific"
+                    )
                 if self.rpd is not None and self.day_requests >= self.rpd:
                     raise QuotaExhaustedError(
                         self.model, self.day_requests, self.rpd, "midnight Pacific"
@@ -208,11 +215,18 @@ class _Bucket:
                 self.rpd = rpd
 
     def mark_exhausted(self) -> None:
-        """Provider says the day is spent. Trust that over our own count."""
+        """Provider says today's allowance is gone.
+
+        Flags the day, and deliberately does NOT write rpd. The count we hit the
+        wall at is only "what was left when this run started", not the published
+        cap. On 2026-08-14 gemini-flash-lite stopped at 284 because preflight and
+        some manual testing had already spent part of the day. Recording 284 as
+        the permanent limit would have capped every future run at 284 even if the
+        real allowance is higher.
+        """
         with self.lock:
             self._roll_day()
-            self.rpd = self.day_requests or 1
-            self.day_requests = max(self.day_requests, self.rpd)
+            self.exhausted_day = self.day
 
     def snapshot(self) -> dict[str, Any]:
         with self.lock:
@@ -225,7 +239,11 @@ class _Bucket:
                 "day": self.day,
                 "day_requests": self.day_requests,
                 "day_tokens": self.day_tokens,
-                "remaining_today": (self.rpd - self.day_requests) if self.rpd else None,
+                "exhausted_day": self.exhausted_day,
+                "exhausted_today": self.exhausted_day == self.day,
+                "remaining_today": 0
+                if self.exhausted_day == self.day
+                else ((self.rpd - self.day_requests) if self.rpd else None),
             }
 
 
@@ -258,6 +276,7 @@ class Limiter:
             b = _Bucket(model=key)
             b.rpm, b.tpm, b.rpd = d.get("rpm"), d.get("tpm"), d.get("rpd")
             b.day = d.get("day", _pacific_day())
+            b.exhausted_day = d.get("exhausted_day", "")
             b.day_requests = d.get("day_requests", 0)
             b.day_tokens = d.get("day_tokens", 0)
             b._roll_day()
