@@ -74,7 +74,7 @@ points, the student blocks it outright. Neither is neutral about length.
 
 ## Try it
 
-**🔗 Live demo: _[add your deploy URL here]_** — the guardrail runs **in your browser**, no backend.
+**🔗 [Live demo](https://RugFace-judgeguard.static.hf.space)** — the guardrail runs **in your browser**, no backend.
 
 The distilled student is a logistic model over hashed n-grams plus an isotonic step function, so
 the whole inference path is a sparse dot product. `site/` ships a JavaScript port that reproduces
@@ -223,13 +223,13 @@ make gate
 ```
 === JudgeGuard eval gate ===
   [PASS] error variants differ from their reference   all differ
-  [PASS] verbosity probe introduces no error          1500 probe variants
-  [PASS] guardrail accuracy vs ground truth           0.7925   (expected >= 0.70)
+  [PASS] verbosity probe introduces no error          360 probe variants
+  [PASS] guardrail accuracy vs ground truth           0.7708   (expected >= 0.70)
   [PASS] guardrail block precision                    1.0000   (expected >= 0.90)
   [PASS] guardrail false-block rate                   0.0000   (expected <= 0.05)
-  [PASS] guardrail calibration error                  0.0311   (expected <= 0.15)
+  [PASS] guardrail calibration error                  0.0157   (expected <= 0.15)
   [PASS] documented blind spot: numeric_swap          0.0000 detected
-  [PASS] guardrail p99 latency                        5.66 ms  (expected <= 150 ms)
+  [PASS] guardrail p99 latency                        5.33 ms  (expected <= 150 ms)
   ...
   18/18 checks passed
 ```
