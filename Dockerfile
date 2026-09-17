@@ -24,6 +24,7 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv sync --locked --no-dev --no-install-project
 
 COPY judgeguard/ judgeguard/
+COPY gradio_app.py demo-data.json ./
 RUN uv sync --locked --no-dev --no-editable
 
 
