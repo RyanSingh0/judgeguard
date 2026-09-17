@@ -9,29 +9,37 @@ new Docker and CPU Basic Spaces are disabled.
 ## Free Hugging Face deployment
 
 The Space is `RugFace/judgeguard-app`, using Gradio 6.27.0 and Python 3.12.
-The deployment has four files: `README.md`, `app.py`, `requirements.txt` and
-`demo-data.json`. `app.py` is the repository's `gradio_app.py`. Requirements pin
-the project to an immutable GitHub commit. The data bundle contains only the public
+Deploy three files: `README.md`, `app.py` and `requirements.txt`. Use `deploy/app.py`
+as the entry point. The built project wheel contains the UI and `demo-data.json`.
+Requirements pin the project to an immutable GitHub commit. The bundle contains only the public
 SQuAD-derived pilot and recorded model responses. No provider key, local model,
 training cache or private user data belongs in the upload.
 
-The workbench performs CPU-only replay and evidence inspection; it never asks
-ZeroGPU to allocate a GPU. ZeroGPU is the account's available hosting option, not
-a claim of live inference. For model experiments, run the local benchmark separately.
-Free hosting availability and account limits can change.
+Replay and saved evidence use CPU only. ZeroGPU rejected the initial CPU-only app
+because it requires a decorated GPU function. The third tab now provides genuine
+Qwen3-0.6B inference, bounded to 3072 input tokens and 192 new tokens, with a
+45-second GPU allocation limit. This is separate from the published Qwen3-4B pilot.
+Its raw opinion is not used as a blocking decision. Free queues and daily quotas apply.
+Only the live tab requests a GPU; availability and account limits can change.
 
-To redeploy, generate `demo-data.json` with `scripts/build_demo_bundle.py`, copy the
-app and bundle, use `deploy/README.gradio.md` as the Space README, and update the
+To redeploy, generate `demo-data.json` with `scripts/build_demo_bundle.py`, commit it,
+use `deploy/app.py` and `deploy/README.gradio.md` for the Space, and update the
 immutable commit in requirements after testing. Match the SDK version to the pinned
 Gradio version. Upload through the Space Files tab or commit through the Hub CLI.
 
-Export deployment dependencies with `uv export --locked --extra demo --no-dev
+Export deployment dependencies with `uv export --locked --extra demo --extra live --no-dev
 --no-hashes --no-emit-project --output-file requirements.txt`, then append
 `judgeguard @ git+https://github.com/RyanSingh0/judgeguard.git@<tested-full-commit>`.
 The demo extra includes Gradio's `oauth,mcp` constraints because Spaces injects
 those extras during its build. They constrain Pydantic to a compatible version;
 exporting the plain Gradio environment caused the initial hosted build to fail.
 These optional integrations are not enabled as product features by the app.
+Append `spaces==0.51.3` and `torch==2.13.0` to match the supported hosted runtime.
+The Space's `SPACE_ID` enables live inference at startup. The model loads from
+`Qwen/Qwen3-0.6B` revision `c1899de289a04d12100db370d81485cdf75e47ca`, with
+CUDA placement at startup as required by ZeroGPU. The weights are cached by the
+hosting runtime; no provider key is needed. Local default startup skips that import
+and needs no model download. `JUDGEGUARD_LIVE_DEMO=1` is an explicit GPU opt-in.
 
 ## What the release gates mean
 

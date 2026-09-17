@@ -17,9 +17,10 @@ short_description: Replay agent traces and inspect real LLM judge failures
 A correct answer can hide a broken trace. Replay four deterministic tools, locate
 inconsistent recorded results, and inspect 200 actual local Qwen judge responses.
 
-**Tabs:** editable trace audit, real numeric QA evidence explorer, release criteria.
-No API key or live-model inference is needed. The app does not allocate a GPU.
-The account hosts it using the free Gradio ZeroGPU option.
+**Tabs:** editable trace audit, real numeric QA evidence explorer, optional live
+Qwen3-0.6B judge, and release criteria. No API key is needed. Only the live judge
+uses GPU quota; replay and saved evidence do not. Free queues and daily limits apply.
+The live 0.6B model is separate from the measured 4B pilot below and is not a blocker.
 
 The 100-pair Qwen pilot scored 96 correct rankings (95% article-cluster interval
 92.45%–99.03%). Four ties remain visible. This is a narrow constructed-error study,

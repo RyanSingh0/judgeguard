@@ -1,4 +1,4 @@
-"""Public evaluation workbench. No API key, model download or GPU allocation."""
+"""Evaluation workbench with optional, separately labelled ZeroGPU inference."""
 
 from __future__ import annotations
 
@@ -9,6 +9,12 @@ from pathlib import Path
 import gradio as gr
 
 from judgeguard.agent.audit import audit_trace, trace_examples
+
+LIVE_JUDGE = None
+if os.getenv("SPACE_ID") or os.getenv("JUDGEGUARD_LIVE_DEMO") == "1":
+    from judgeguard.space_judge import judge_live
+
+    LIVE_JUDGE = judge_live
 
 ROOT = Path(__file__).resolve().parent
 BUNDLE = json.loads((ROOT / "demo-data.json").read_text(encoding="utf-8"))
@@ -179,13 +185,52 @@ def build_demo() -> gr.Blocks:
                 [question, context, ref, bad, verdict, reasoning_a, reasoning_b, raw],
                 api_name="inspect_pair",
             )
-        with gr.Tab("03 · Evidence and release criteria"):
+        with gr.Tab("03 · Try a live model"):
             gr.Markdown(
-                "## Measured, replayed, or simulated?\n\n| Component | Evidence | Status |\n|---|---|---|\n| Trace auditor | Actual deterministic tool execution | Available interactively |\n| Numeric QA pilot | 200 actual local Qwen responses | Published with raw evidence |\n| Historical four-judge study | Simulated model responses | Research archive only |\n| Distilled student | Simulation-trained classifier | **Not approved for production blocking** |\n\n### The failed gate stays visible\nThe corrected 200-item student rebuild scored **56.25% accuracy**, with **54.39% block precision** and **65% false blocks** on 80 held-out rows. It does not satisfy the existing promotion criteria. No threshold was weakened to make it pass. The workbench release tests do not certify the student.\n\n### Reproduce and extend\nRun the local model, collect checkpoints, inspect failures and version the dataset. New domains need their own labels and source-separated validation. The hosted workbench needs no API key or GPU allocation; ZeroGPU is the account's hosting option. Training and live model evaluation run separately.\n\n[Source and setup](https://github.com/RyanSingh0/judgeguard) · [Full model provenance](https://github.com/RyanSingh0/judgeguard/blob/main/results/pilot_live.json) · [Raw judgments](https://github.com/RyanSingh0/judgeguard/blob/main/results/pilot-evidence/judgments.jsonl) · [Dataset attribution](https://github.com/RyanSingh0/judgeguard/blob/main/data/README.md)"
+                "### Ask a small judge, then inspect its reasoning\n"
+                "**Qwen3-0.6B · live GPU inference · experimental.** This smaller model is "
+                "different from the Qwen3-4B pilot. Its opinion can be wrong and does not "
+                "control any blocking decision. Only this tab consumes free ZeroGPU quota; "
+                "queues and daily limits apply. The other tabs work without inference.\n\n"
+                "Edit the public example or enter non-sensitive material. Your inputs are "
+                "processed on Hugging Face; JudgeGuard does not add them to the published dataset."
+            )
+            live_source = gr.Textbox(
+                value="The warehouse stores 4200 pallets. Each pallet weighs 27.5 kg.",
+                label="Source (up to 4000 characters)",
+                lines=4,
+            )
+            live_question = gr.Textbox(
+                value="How many pallets does the warehouse store?",
+                label="Question (up to 600 characters)",
+            )
+            live_answer = gr.Textbox(
+                value="4400 pallets", label="Answer to judge (up to 600 characters)"
+            )
+            live_run = gr.Button(
+                "Run live judge", variant="primary", interactive=LIVE_JUDGE is not None
+            )
+            live_response = gr.Textbox(label="Model opinion — verify against the source", lines=5)
+            live_meta = gr.JSON(label="This response's provenance")
+            if LIVE_JUDGE is not None:
+                live_run.click(
+                    LIVE_JUDGE,
+                    [live_source, live_question, live_answer],
+                    [live_response, live_meta],
+                    api_name="judge_live",
+                    concurrency_limit=1,
+                )
+            else:
+                gr.Markdown(
+                    "Live inference is available in the hosted ZeroGPU Space. Local replay and saved evidence need no model download."
+                )
+        with gr.Tab("04 · Evidence and release criteria"):
+            gr.Markdown(
+                "## Measured, replayed, or simulated?\n\n| Component | Evidence | Status |\n|---|---|---|\n| Trace auditor | Actual deterministic tool execution | Available interactively |\n| Numeric QA pilot | 200 actual local Qwen responses | Published with raw evidence |\n| Historical four-judge study | Simulated model responses | Research archive only |\n| Distilled student | Simulation-trained classifier | **Not approved for production blocking** |\n\n### The failed gate stays visible\nThe corrected 200-item student rebuild scored **56.25% accuracy**, with **54.39% block precision** and **65% false blocks** on 80 held-out rows. It does not satisfy the existing promotion criteria. No threshold was weakened to make it pass. The workbench release tests do not certify the student.\n\n### Reproduce and extend\nRun the local model, collect checkpoints, inspect failures and version the dataset. New domains need their own labels and source-separated validation. Replay and evidence inspection need no GPU allocation. The separate live tab runs an uncalibrated Qwen3-0.6B judge on ZeroGPU, subject to free quotas. The 4B pilot remains a separately recorded study.\n\n[Source and setup](https://github.com/RyanSingh0/judgeguard) · [Full model provenance](https://github.com/RyanSingh0/judgeguard/blob/main/results/pilot_live.json) · [Raw judgments](https://github.com/RyanSingh0/judgeguard/blob/main/results/pilot-evidence/judgments.jsonl) · [Dataset attribution](https://github.com/RyanSingh0/judgeguard/blob/main/data/README.md)"
             )
             gr.JSON(PILOT, label="Published study manifest", open=False)
             gr.Markdown(
-                "Code: MIT. SQuAD-derived data: CC BY-SA 4.0. Local Qwen weights: Apache-2.0. No weights are hosted by this app.\n\nBuilt by **Aryan Meena** · [GitHub](https://github.com/RyanSingh0)"
+                "Code: MIT. SQuAD-derived data: CC BY-SA 4.0. Qwen weights: Apache-2.0. The hosted live tab downloads the pinned 0.6B model; the recorded pilot used 4B.\n\nBuilt by **Aryan Meena** · [GitHub](https://github.com/RyanSingh0)"
             )
     return demo
 

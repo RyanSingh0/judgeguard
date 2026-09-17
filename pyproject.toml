@@ -1,7 +1,7 @@
 [project]
 name = "judgeguard"
 version = "0.1.0"
-description = "Measuring LLM judge reliability with degradation-generated gold labels, then shipping the calibrated judge as a sub-150ms inline guardrail."
+description = "Agent trace replay, real LLM judge evidence, and reproducible evaluation experiments."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -40,6 +40,7 @@ dependencies = [
 [project.optional-dependencies]
 # Spaces installs these extras automatically; include their constraints locally.
 demo = ["gradio[oauth,mcp]==6.27.0"]
+live = ["transformers==5.17.0"]
 # Heavy, optional. The pipeline falls back to a hashing vectoriser if absent,
 # so `uv sync` stays fast in CI and the repo runs on a laptop with no GPU.
 embeddings = ["sentence-transformers>=3.0"]
@@ -78,6 +79,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["judgeguard"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"gradio_app.py" = "judgeguard/_workbench.py"
+"demo-data.json" = "judgeguard/demo-data.json"
 
 # ---------------------------------------------------------------- ruff
 [tool.ruff]

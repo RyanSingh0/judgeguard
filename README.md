@@ -27,6 +27,11 @@ against source-supported answers. The public demo runs without API keys.
 The first tab executes real deterministic checks on constructed traces. The second
 shows **saved real-model evidence**, not a new inference call. Neither is simulated.
 
+The **Try a live model** tab runs Qwen3-0.6B on ZeroGPU with your source, question
+and answer. This is an uncalibrated model opinion, not the Qwen3-4B benchmark or a
+blocking decision. It reports the model revision, token counts and finish reason.
+Only live inference uses ZeroGPU quota; trace replay and evidence browsing do not.
+
 ## What is implemented
 
 | Capability | What you can do |
@@ -34,6 +39,7 @@ shows **saved real-model evidence**, not a new inference call. Neither is simula
 | Agent trace replay | Paste/edit JSON; check declared tools, arguments, recorded results and an optional expected final answer. |
 | Failure analysis | Locate wrong arguments, fabricated results and unsupported tools; distinguish a matching answer from a consistent execution. |
 | Real evidence explorer | Inspect all 100 QA pairs, the four failures, source passages, judge rationales and raw metadata. |
+| Live GPU judge | Try Qwen3-0.6B against an editable source and answer; inspect its raw opinion and provenance. |
 | Local evaluation runner | Run a local or configured hosted model with bounded judgments, checkpoints and resume. |
 | CLI and API | Audit with `judgeguard audit-trace` or `POST /audit`; access the measured report at `/benchmark`. |
 | Reproducibility | Pinned model revision, checksums, raw responses, locked dependencies, tests, and separate release/promotion checks. |
@@ -140,8 +146,9 @@ Gemini, Llama, Qwen or GPT performance. The real pilot is identified separately.
 ## Deploy and extend
 
 The public deployment uses **Gradio on the account's free ZeroGPU hosting option**.
-The workbench itself does not allocate a GPU: replay and evidence inspection need
-no model inference. See [deployment instructions](docs/release.md).
+ZeroGPU requires an actual GPU function. The optional live judge supplies it;
+replay and saved evidence remain CPU-only. Free queues and daily GPU quotas apply.
+See [deployment instructions](docs/release.md).
 
 For a stronger study, add permission-cleared domain examples, naturally occurring
 agent failures, complete tool observations and independently reviewed labels.
