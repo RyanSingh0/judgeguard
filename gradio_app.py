@@ -37,9 +37,9 @@ CSS = """
 #hero p {color:#d5e8f1;margin:0;max-width:760px;line-height:1.6}
 .eyebrow {color:#82dcc4;font:600 12px ui-monospace,monospace;letter-spacing:2px;margin-bottom:12px}
 .chips {display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}.chips span {border:1px solid #ffffff30;border-radius:30px;padding:5px 12px;font-size:12px;color:#edf8ff}
-.result {border-radius:12px;padding:18px 22px;margin:10px 0;border:1px solid #d2dae2;background:#f3f7fa;color:#152e42}
-.result strong {display:block;font-size:23px;margin-bottom:4px;color:inherit!important}.result.fail {border-color:#e6a5a5;background:#fff2f2;color:#832c35}.result.pass {border-color:#8cc9b4;background:#ecfaf4;color:#15543d}
-.metric-row {display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 20px}.metric {padding:20px;border:1px solid #dbe3e9;border-radius:12px;background:#f5f8fa;color:#17334b}.metric b {display:block;font-size:30px}.metric span {font-size:12px;color:#476075}
+.result {border-radius:12px;padding:18px 22px;margin:10px 0;border:1px solid #d2dae2;background:#f3f7fa;color:#152e42!important}
+.result strong {display:block;font-size:23px;margin-bottom:4px;color:inherit!important}.result.fail {border-color:#e6a5a5;background:#fff2f2;color:#832c35!important}.result.pass {border-color:#8cc9b4;background:#ecfaf4;color:#15543d!important}
+.metric-row {display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 20px}.metric {padding:20px;border:1px solid #dbe3e9;border-radius:12px;background:#f5f8fa;color:#17334b!important}.metric b {display:block;font-size:30px;color:#17334b!important}.metric span {font-size:12px;color:#476075!important}
 @media(max-width:650px){.metric-row{grid-template-columns:repeat(2,1fr)}#hero{padding:24px}#hero h1{font-size:32px}}
 """
 
