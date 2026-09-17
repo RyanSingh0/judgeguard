@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Assemble the static Space in site/.
 
-Hugging Face's free tier serves static files only, so the demo has no backend.
+This static Space serves files only, so this version of the demo has no backend.
 That turns out to suit this project: the distilled guardrail is a sparse dot
 product plus a step function, so it runs client-side at the same speed and with
 the same numbers (see site/parity.test.js). The LLM `/evaluate` path is dropped

@@ -1,0 +1,25 @@
+{
+  "mode": "live",
+  "planned_pairs": 100,
+  "completed_pairs": 100,
+  "complete": true,
+  "scoring_rule": "reference > corrupted; ties and parse failures count as failures",
+  "discrimination_accuracy": {
+    "value": 0.96,
+    "lo": 0.9245283018867925,
+    "hi": 0.9902912621359223,
+    "method": "article-cluster percentile bootstrap",
+    "confidence": 0.95,
+    "n_pairs": 100,
+    "n_clusters": 28,
+    "caveat": "Small or boundary samples can yield uninformative bootstrap intervals; inspect counts."
+  },
+  "pairs_with_parse_failure": 0,
+  "provider_calls_recorded": 200,
+  "prompt_tokens": 87238,
+  "completion_tokens": 9459,
+  "models_served": [
+    "qwen3-4b-q4km-bc640142"
+  ],
+  "limitations": "Constructed numeric errors on public QA; no production, calibration, or safety guarantee."
+}

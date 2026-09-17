@@ -49,7 +49,9 @@ def label_from_scores(
         out.append(
             LabelledExample(
                 uid=r["uid"],
-                text=render_example(r.get("question", ""), r.get("answer", "")),
+                text=render_example(
+                    r.get("question", ""), r.get("answer", ""), r.get("context", "")
+                ),
                 teacher_label=int(float(score) >= accept_at),
                 truth_label=int(r.get("is_reference", 0)),
                 degradation=r.get("degradation", "none"),

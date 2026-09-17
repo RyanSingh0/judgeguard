@@ -11,12 +11,17 @@ judgeguard serve                        run the API + demo UI
 from __future__ import annotations
 
 import json
+import sys
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
 from judgeguard import __version__
+
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 app = typer.Typer(add_completion=False, help=__doc__)
 console = Console()
@@ -103,7 +108,7 @@ def judge(
 
 
 @app.command()
-def guard(answer: str, question: str = "") -> None:
+def guard(answer: str, question: str = "", context: str = "") -> None:
     """Run the inline guardrail on one answer."""
     from judgeguard.distill.train import Student
     from judgeguard.store import RESULTS_DIR
@@ -112,7 +117,7 @@ def guard(answer: str, question: str = "") -> None:
     if not path.exists():
         console.print("[red]No student model. Run: python experiments/09_distill.py[/red]")
         raise typer.Exit(1)
-    out = Student.load(path).guard(question, answer)
+    out = Student.load(path).guard(question, answer, context)
     colour = "green" if out["decision"] == "allow" else "red"
     console.print(
         f"[{colour}]{out['decision'].upper()}[/{colour}]  "
@@ -139,7 +144,7 @@ def report(experiment: str = typer.Argument("01_discrimination")) -> None:
 
     d = load(experiment)
     d.pop("records", None)
-    console.print_json(json.dumps(d)[:20000])
+    console.print_json(json.dumps(d))
 
 
 @app.command()
@@ -148,6 +153,23 @@ def serve(host: str = "0.0.0.0", port: int = 8080, reload: bool = False) -> None
     import uvicorn
 
     uvicorn.run("judgeguard.serve.app:app", host=host, port=port, reload=reload)
+
+
+@app.command("audit-trace")
+def audit_trace_command(path: str) -> None:
+    """Replay a JSON trace against the four supported deterministic tools."""
+    from pathlib import Path
+
+    from judgeguard.agent.audit import audit_trace
+
+    try:
+        result = audit_trace(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        console.print(str(exc), markup=False)
+        raise typer.Exit(2) from exc
+    console.print_json(json.dumps(result))
+    if result["status"] == "failed":
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

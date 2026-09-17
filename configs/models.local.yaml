@@ -1,0 +1,11 @@
+# No API key required. Start llama-server on loopback before selecting live mode.
+providers:
+  llamacpp:
+    base_url: http://127.0.0.1:8081/v1
+    models:
+      - id: qwen3-4b-q4km-bc640142
+        alias: local-qwen
+        family: qwen3
+        tier: local
+panel: [local-qwen]
+generators: [local-qwen]

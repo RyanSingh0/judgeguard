@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import ast
 import operator as op
+from collections.abc import Callable
 from datetime import date, datetime
 from typing import Any
 
 # --------------------------------------------------------------------- calculator
-_BINOPS = {
+_BINOPS: dict[type[ast.operator], Callable[[float, float], float]] = {
     ast.Add: op.add,
     ast.Sub: op.sub,
     ast.Mult: op.mul,
@@ -30,7 +31,7 @@ _BINOPS = {
     ast.Mod: op.mod,
     ast.FloorDiv: op.floordiv,
 }
-_UNARY = {ast.UAdd: op.pos, ast.USub: op.neg}
+_UNARY: dict[type[ast.unaryop], Callable[[float], float]] = {ast.UAdd: op.pos, ast.USub: op.neg}
 MAX_EXPONENT = 8
 
 

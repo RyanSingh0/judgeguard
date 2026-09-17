@@ -1,0 +1,28 @@
+{
+  "task": "Compute the mass in kg when warehouse A is filled to pallet capacity.",
+  "steps": [
+    {
+      "tool": "lookup",
+      "args": {
+        "key": "warehouse_a_capacity"
+      },
+      "result": "4200"
+    },
+    {
+      "tool": "lookup",
+      "args": {
+        "key": "pallet_weight_kg"
+      },
+      "result": "27.5"
+    },
+    {
+      "tool": "calculator",
+      "args": {
+        "expr": "4200 * 28.5"
+      },
+      "result": "115500"
+    }
+  ],
+  "final_answer": "115500 kg",
+  "expected_final_answer": "115500 kg"
+}

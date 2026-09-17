@@ -70,7 +70,12 @@ def cached_complete(
     # of a self-consistency experiment are five independent samples, and folding
     # them onto one cache entry would silently report perfect self-agreement.
     replicate = (meta or {}).get("replicate", 0)
-    key = cache_key(provider.name, model, prompt, _replicate=replicate, **params)
+    identity = {"base_url": getattr(provider, "base_url", "")}
+    if provider.name == "simulated":
+        identity.update(profile=provider.profile, meta=meta)
+    key = cache_key(
+        provider.name, model, prompt, _replicate=replicate, _identity=identity, **params
+    )
     if use_cache and key in _cache:
         STATS["hits"] += 1
         hit: Completion = Completion.model_validate(_cache[key])

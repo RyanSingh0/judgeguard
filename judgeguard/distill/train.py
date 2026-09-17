@@ -25,7 +25,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, train_test_split
 
 from judgeguard.distill.features import get_featurizer, render_example
 
@@ -132,6 +132,7 @@ class Student:
         test_size: float = 0.20,
         calibration_size: float = 0.20,
         strat_on: list[str] | None = None,
+        item_groups: list[str] | None = None,
     ) -> tuple[StudentReport, dict[str, Any]]:
         """Fit on the teacher's labels, then recalibrate against free ground truth.
 
@@ -163,16 +164,29 @@ class Student:
         # entirely. I saw hedging, topic_drift and reference all missing from a
         # 20% split, which isn't a smaller sample, it's a missing row.
         strat = _stratification_key(strat_on, y_all)
-        i_fit, i_test = train_test_split(
-            idx, test_size=test_size, random_state=self.seed, stratify=strat
-        )
         rel_cal = calibration_size / (1.0 - test_size)
-        i_tr, i_cal = train_test_split(
-            i_fit, test_size=rel_cal, random_state=self.seed, stratify=strat[i_fit]
-        )
+        if item_groups is None:
+            i_fit, i_test = train_test_split(
+                idx, test_size=test_size, random_state=self.seed, stratify=strat
+            )
+            i_tr, i_cal = train_test_split(
+                i_fit, test_size=rel_cal, random_state=self.seed, stratify=strat[i_fit]
+            )
+            cv: Any = 5
+        else:
+            groups = np.asarray(item_groups)
+            if groups.size != idx.size or len(set(groups)) < 10:
+                raise ValueError("Provide one source group per row and at least 10 groups")
+            splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=self.seed)
+            i_fit, i_test = next(splitter.split(idx, y_all, groups))
+            splitter = GroupShuffleSplit(n_splits=1, test_size=rel_cal, random_state=self.seed)
+            tr, cal = next(splitter.split(i_fit, y_all[i_fit], groups[i_fit]))
+            i_tr, i_cal = i_fit[tr], i_fit[cal]
+            folds = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=self.seed)
+            cv = list(folds.split(i_tr, y_all[i_tr], groups[i_tr]))
 
-        base = LogisticRegression(max_iter=2000, C=1.0, solver="liblinear")
-        self.clf = CalibratedClassifierCV(base, method="isotonic", cv=5)
+        base = LogisticRegression(max_iter=2000, C=1.0, solver="liblinear", random_state=self.seed)
+        self.clf = CalibratedClassifierCV(base, method="isotonic", cv=cv)
         t0 = time.perf_counter()
         self.clf.fit(X_all[i_tr], y_all[i_tr])
         fit_s = time.perf_counter() - t0
@@ -219,7 +233,11 @@ class Student:
             "reliability_curve": table,
             "reliability_curve_before": expected_calibration_error(y_truth_test, raw_test)[1],
             "test_indices": i_test.tolist(),
+            "train_indices": i_tr.tolist(),
             "calibration_indices": i_cal.tolist(),
+            "calibration_probabilities": self.predict_proba([texts[i] for i in i_cal]).tolist(),
+            "calibration_truth": t_all[i_cal].tolist(),
+            "split_unit": "source_item" if item_groups is not None else "row",
             "test_probabilities": p.tolist(),
             "test_probabilities_uncalibrated": raw_test.tolist(),
             "test_labels": y_teacher_test.tolist(),

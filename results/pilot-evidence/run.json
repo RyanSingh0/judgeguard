@@ -1,0 +1,11 @@
+{
+  "dataset_sha256": "146cb1cb3318b1e3cc752c9201c6f810805b05df8c65d7575dec6d524dad70bd",
+  "backend": "api",
+  "model": "local-qwen",
+  "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+  "max_tokens": 256,
+  "prompt_sha256": "ae24b03bb4c1d504a26523c721f9152fa35bf9be735c0eadb3f6b41f6ee62d20",
+  "resolved_model": "qwen3-4b-q4km-bc640142",
+  "provider": "llamacpp",
+  "base_url": "http://127.0.0.1:8081/v1"
+}

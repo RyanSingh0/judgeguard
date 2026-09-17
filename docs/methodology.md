@@ -1,3 +1,5 @@
+> **Historical research document:** model findings in this document describe the original simulated study. For the current real-evidence workbench, supported features, and student limitations, read [the release guide](release.md) and the root README.
+
 # Methodology
 
 > Every number in this repository was produced by a script in `experiments/`, written to a

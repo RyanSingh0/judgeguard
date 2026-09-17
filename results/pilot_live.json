@@ -1,0 +1,70 @@
+{
+  "provenance": {
+    "mode": "live",
+    "generated_at": "2026-09-17T15:29:21.176406+00:00",
+    "dataset_sha256": "146cb1cb3318b1e3cc752c9201c6f810805b05df8c65d7575dec6d524dad70bd",
+    "raw_sha256": "f8f2c8468afceb8c52acd9c53d7fde64c549dd222c8d951187ba231b0d6070a3",
+    "code_base": "05be5b381609eddb237489a8c8a1f88784709b34 plus September 2026 repair patch"
+  },
+  "model": {
+    "name": "Qwen3-4B Q4_K_M",
+    "repository": "https://huggingface.co/Qwen/Qwen3-4B-GGUF",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "file_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "runtime": "llama.cpp b11012 Vulkan; RTX 4060 Laptop 8GB; reasoning off; context 8192; one slot",
+    "license": "Apache-2.0",
+    "paid_api_cost_usd": 0,
+    "cost_caveat": "Uses existing hardware and electricity; not zero physical compute cost."
+  },
+  "run": {
+    "dataset_sha256": "146cb1cb3318b1e3cc752c9201c6f810805b05df8c65d7575dec6d524dad70bd",
+    "backend": "api",
+    "model": "local-qwen",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "max_tokens": 256,
+    "prompt_sha256": "ae24b03bb4c1d504a26523c721f9152fa35bf9be735c0eadb3f6b41f6ee62d20",
+    "resolved_model": "qwen3-4b-q4km-bc640142",
+    "provider": "llamacpp",
+    "base_url": "http://127.0.0.1:8081/v1"
+  },
+  "dataset": {
+    "source_url": "https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json",
+    "source_sha256": "80a5225e94905956a6446d296ca1093975c4d3b3260f1d6c8f68bc2ab77182d8",
+    "dataset_sha256": "146cb1cb3318b1e3cc752c9201c6f810805b05df8c65d7575dec6d524dad70bd",
+    "license": "CC-BY-SA-4.0",
+    "attribution": "SQuAD: Rajpurkar, Jia, Liang et al.; Wikipedia passages",
+    "pairs": 100,
+    "candidate_answers": 200,
+    "source_articles": 28,
+    "seed": 20260731,
+    "scope": "Numeric short-answer pilot only; not an overall RAG or agent benchmark",
+    "training_policy": "Evaluation-only. Do not train or tune on this pilot."
+  },
+  "summary": {
+    "mode": "live",
+    "planned_pairs": 100,
+    "completed_pairs": 100,
+    "complete": true,
+    "scoring_rule": "reference > corrupted; ties and parse failures count as failures",
+    "discrimination_accuracy": {
+      "value": 0.96,
+      "lo": 0.9245283018867925,
+      "hi": 0.9902912621359223,
+      "method": "article-cluster percentile bootstrap",
+      "confidence": 0.95,
+      "n_pairs": 100,
+      "n_clusters": 28,
+      "caveat": "Small or boundary samples can yield uninformative bootstrap intervals; inspect counts."
+    },
+    "pairs_with_parse_failure": 0,
+    "provider_calls_recorded": 200,
+    "prompt_tokens": 87238,
+    "completion_tokens": 9459,
+    "models_served": [
+      "qwen3-4b-q4km-bc640142"
+    ],
+    "limitations": "Constructed numeric errors on public QA; no production, calibration, or safety guarantee."
+  },
+  "evidence": "results/pilot-evidence/judgments.jsonl",
+  "interpretation": "One local quantized model, 100 constructed numeric errors. No claim about hosted models, production RAG, training performance, or agent safety. Public benchmark contamination cannot be ruled out. Human review pending."
+}

@@ -1,0 +1,13 @@
+{
+  "source_url": "https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json",
+  "source_sha256": "80a5225e94905956a6446d296ca1093975c4d3b3260f1d6c8f68bc2ab77182d8",
+  "dataset_sha256": "146cb1cb3318b1e3cc752c9201c6f810805b05df8c65d7575dec6d524dad70bd",
+  "license": "CC-BY-SA-4.0",
+  "attribution": "SQuAD: Rajpurkar, Jia, Liang et al.; Wikipedia passages",
+  "pairs": 100,
+  "candidate_answers": 200,
+  "source_articles": 28,
+  "seed": 20260731,
+  "scope": "Numeric short-answer pilot only; not an overall RAG or agent benchmark",
+  "training_policy": "Evaluation-only. Do not train or tune on this pilot."
+}

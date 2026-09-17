@@ -1,3 +1,5 @@
+> **Historical research document:** model findings in this document describe the original simulated study. For the current real-evidence workbench, supported features, and student limitations, read [the release guide](release.md) and the root README.
+
 # Interview prep — know this project like you built it
 
 *(You did. This is so you can talk about it under pressure without reaching.)*

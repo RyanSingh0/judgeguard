@@ -197,7 +197,7 @@ class SimulatedProvider:
         s = self.profile["scoring"]
         jp = self._judge_params(judge, config)
         first_is_ref = bool(meta.get("first_is_reference", True))
-        common = dict(
+        common: dict[str, Any] = dict(
             judge=judge,
             config=config,
             kind=kind,

@@ -31,7 +31,7 @@ from judgeguard.config import get_settings
 from judgeguard.degrade.text import build_variants
 from judgeguard.distill.features import render_example
 from judgeguard.distill.train import Student
-from judgeguard.store import RESULTS_DIR, load, save
+from judgeguard.store import load, save
 
 
 def percentiles(xs: list[float]) -> dict[str, float]:
@@ -60,6 +60,8 @@ def main() -> None:
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--concurrency-levels", type=int, nargs="+", default=[1, 2, 4, 8, 16])
     args = apply_quick_isolation(ap.parse_args())
+    from judgeguard.store import RESULTS_DIR
+
     n_req = 200 if args.quick else args.requests
     budget = get_settings().guard_p99_budget_ms
 

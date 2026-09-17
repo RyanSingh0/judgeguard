@@ -169,10 +169,10 @@ def wrong_argument(traj: Trajectory, severity: float, *, seed: int = 0) -> Traje
             }.get(str(old), "lb")
             notes.append(f"step {i + 1} unit_convert frm {old} -> {s.args['frm']}")
         elif s.tool == "date_diff":
-            old = str(s.args["d2"])
-            y, m, d = (int(x) for x in old.split("-"))
+            old_date = str(s.args["d2"])
+            y, m, d = (int(x) for x in old_date.split("-"))
             s.args["d2"] = f"{y:04d}-{m:02d}-{min(28, max(1, d + rng.choice((-3, 5)))):02d}"
-            notes.append(f"step {i + 1} date_diff d2 {old} -> {s.args['d2']}")
+            notes.append(f"step {i + 1} date_diff d2 {old_date} -> {s.args['d2']}")
         else:
             old = s.args["key"]
             s.args["key"] = (

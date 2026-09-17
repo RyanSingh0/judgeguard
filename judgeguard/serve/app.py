@@ -5,7 +5,7 @@
                     budget can be honoured. Returns allow/block plus the latency
                     it actually took and whether that was within budget.
 
-``POST /evaluate``  asynchronous. The full LLM judge, with reasoning and with the
+``POST /evaluate``  synchronous request/response. The full LLM judge, with reasoning and with the
                     measured reliability of that judge attached, so a caller can
                     see how much to trust the score it just received.
 
@@ -22,19 +22,23 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+import httpx
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
 from judgeguard import __version__
+from judgeguard.agent.audit import AuditTrace, audit_trace
 from judgeguard.config import get_settings, load_registry
 from judgeguard.data.schema import Item
-from judgeguard.distill.features import structural_features
+from judgeguard.distill.features import render_example, structural_features
 from judgeguard.distill.train import Student
 from judgeguard.judges.parse import parse_score
 from judgeguard.judges.prompts import SYSTEM, score_prompt
+from judgeguard.providers.base import ProviderError
+from judgeguard.providers.limits import QuotaExhaustedError
 from judgeguard.providers.registry import complete, mode_banner
 from judgeguard.serve.latency import RECORDER
 from judgeguard.serve.schemas import (
@@ -82,33 +86,54 @@ def get_student() -> Student:
     return _student
 
 
-def _reliability_for(judge: str) -> dict[str, Any]:
+def _reliability_for(judge: str, simulated: bool = True) -> dict[str, Any]:
     """What the battery measured about this judge, attached to its verdict."""
-    out: dict[str, Any] = {"judge": judge}
+    out: dict[str, Any] = {"judge": judge, "available": False}
+    expected_mode = "simulated" if simulated else "live"
+    try:
+        snapshot = load("01_discrimination")
+        if snapshot.get("provenance", {}).get("mode") != expected_mode:
+            out["caveat"] = "No matching reliability study for this execution mode."
+            return out
+        out["provenance"] = snapshot["provenance"]
+    except FileNotFoundError:
+        out["caveat"] = "No reliability study available."
+        return out
     try:
         d = load("01_discrimination")
         pj = d["per_judge"].get(judge)
         if pj:
+            out["available"] = True
             worst = min(pj["by_degradation"], key=lambda g: pj["by_degradation"][g]["value"])
             out["discrimination_accuracy"] = pj["overall_accuracy"]
             out["weakest_degradation"] = {"type": worst, **pj["by_degradation"][worst]}
     except FileNotFoundError:
         pass
     try:
-        p = load("02_position_bias")["per_judge"].get(judge)
+        position = load("02_position_bias")
+        p = (
+            position["per_judge"].get(judge)
+            if position.get("provenance", {}).get("mode") == expected_mode
+            else None
+        )
         if p:
             out["position_inconsistency_rate"] = p["inconsistency_rate"]
     except FileNotFoundError:
         pass
     try:
-        c = load("06_self_consistency")["per_judge"].get(judge)
+        consistency = load("06_self_consistency")
+        c = (
+            consistency["per_judge"].get(judge)
+            if consistency.get("provenance", {}).get("mode") == expected_mode
+            else None
+        )
         if c:
             out["accept_reject_flip_rate_at_temp_0_7"] = c["accept_reject_flip_rate"]
     except FileNotFoundError:
         pass
     out["caveat"] = (
-        "These are the measured properties of this judge on this battery. A single score "
-        "from it should be read with them in view."
+        "Historical battery results, not a guarantee for this request or current model version. "
+        "Simulated results describe the simulator only."
     )
     return out
 
@@ -135,6 +160,30 @@ def health() -> HealthResponse:
     )
 
 
+@app.get("/benchmark")
+def benchmark() -> JSONResponse:
+    """Public aggregate of the real-source pilot; no keys or raw request logs."""
+    try:
+        data = load("pilot_live")
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404, detail="No completed real pilot published yet"
+        ) from exc
+    return JSONResponse(json_safe(data))
+
+
+@app.get("/models")
+def models() -> dict[str, Any]:
+    """Current selectable aliases, independent of historical experiment names."""
+    reg = load_registry()
+    return {"panel": reg.panel, "mode": get_settings().effective_mode().value}
+
+
+@app.post("/audit")
+def audit(req: AuditTrace) -> dict[str, Any]:
+    return audit_trace(req.model_dump())
+
+
 @app.post("/guard", response_model=GuardResponse)
 def guard(req: GuardRequest, response: Response) -> GuardResponse:
     """Inline path. Hard budget, no network call."""
@@ -143,9 +192,7 @@ def guard(req: GuardRequest, response: Response) -> GuardResponse:
         student = get_student()
         thr = req.threshold if req.threshold is not None else student.threshold
         t0 = time.perf_counter()
-        p = float(
-            student.predict_proba([f"QUESTION: {req.question}\n[SEP]\nANSWER: {req.answer}"])[0]
-        )
+        p = float(student.predict_proba([render_example(req.question, req.answer, req.context)])[0])
         dt = (time.perf_counter() - t0) * 1000
 
     feats = structural_features(req.answer)
@@ -156,7 +203,7 @@ def guard(req: GuardRequest, response: Response) -> GuardResponse:
         "filler_phrase_count": float(feats[4]),
         "numeric_density": float(feats[5]),
     }
-    decision = "allow" if p >= thr else "block"
+    decision: Literal["allow", "block"] = "allow" if p >= thr else "block"
     if decision == "block":
         drivers = []
         if signals["hedge_density"] > 0.02:
@@ -188,7 +235,7 @@ def guard(req: GuardRequest, response: Response) -> GuardResponse:
 
 @app.post("/evaluate", response_model=EvaluateResponse)
 def evaluate(req: EvaluateRequest) -> EvaluateResponse:
-    """Async path. Full LLM judge plus that judge's measured reliability."""
+    """Full LLM judge; the HTTP request waits for completion (no task queue)."""
     reg = load_registry()
     judge = req.judge or reg.panel[0]
     if judge not in reg.aliases:
@@ -196,15 +243,20 @@ def evaluate(req: EvaluateRequest) -> EvaluateResponse:
     spec = reg.by_alias(judge)
     item = Item(id="live", domain="live", context=req.context, question=req.question, reference="")
     prompt = score_prompt(req.config, item, req.answer)
-    with RECORDER.time("/evaluate"):
-        c = complete(
-            judge,
-            prompt,
-            temperature=0.0,
-            max_tokens=spec.token_budget(320 if req.config == "cot" else 160),
-            system=SYSTEM,
-            meta={"task": "score", "config": req.config, "uid": "live"},
-        )
+    try:
+        with RECORDER.time("/evaluate"):
+            c = complete(
+                judge,
+                prompt,
+                temperature=0.0,
+                max_tokens=spec.token_budget(512 if req.config == "cot" else 160),
+                system=SYSTEM,
+                meta={"task": "score", "config": req.config, "uid": "live"},
+            )
+    except (ProviderError, QuotaExhaustedError, httpx.TransportError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Judge unavailable; check provider configuration and quota."
+        ) from exc
     score = parse_score(c.text)
     return EvaluateResponse(
         judge=judge,
@@ -216,7 +268,7 @@ def evaluate(req: EvaluateRequest) -> EvaluateResponse:
         cost_usd=spec.cost_usd(c.prompt_tokens, c.completion_tokens),
         model_served=c.model_served,
         simulated=c.simulated,
-        judge_reliability=_reliability_for(judge),
+        judge_reliability=_reliability_for(judge, c.simulated),
     )
 
 
@@ -228,6 +280,8 @@ def report(experiment: str | None = None) -> JSONResponse:
             return JSONResponse(json_safe(load(experiment)))
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not _report_cache:
         for p in sorted(RESULTS_DIR.glob("*.json")):
             if p.stem == "degraded_set":
@@ -300,11 +354,11 @@ def summary() -> dict[str, Any]:
             {
                 "id": "distillation",
                 "headline": (
-                    f"The distilled student was {d['accuracy_against_ground_truth']['verdict']} "
-                    f"(Δ={100 * g['diff']:+.1f} pp, 95% CI [{100 * g['lo']:+.1f}, {100 * g['hi']:+.1f}]) "
-                    f"while running {e['latency_speedup']:.0f}x faster at zero marginal cost"
+                    f"Historical student-minus-oracle-teacher accuracy: {100 * g['diff']:+.1f} pp "
+                    f"(95% CI [{100 * g['lo']:+.1f}, {100 * g['hi']:+.1f}]); "
+                    f"recorded latency ratio {e['latency_speedup']:.0f}x"
                 ),
-                "why": "An accuracy gap inside the interval is not an accuracy gap.",
+                "why": "Simulation and a test-tuned teacher cutoff; this does not establish equivalence or real-model performance.",
             }
         )
     except FileNotFoundError:
@@ -360,7 +414,7 @@ def examples() -> dict[str, Any]:
             {
                 "label": "omission (a required fact removed)",
                 "expect": "block",
-                "note": "Caught via coverage of the source's content words.",
+                "note": "A required fact is removed; the classifier uses source coverage features.",
                 "text": omission(item, 0.5, seed=1).text,
             },
             {
@@ -368,9 +422,9 @@ def examples() -> dict[str, Any]:
                 "expect": "allow (wrongly)",
                 "note": (
                     "One number changed. The guardrail scores this identically to the "
-                    "reference, because the source states which quantities were reported "
-                    "but not their values. No reference-free string model can catch it. "
-                    "This is what the cascade escalates to the LLM judge."
+                    "reference on this fixture. The source includes the true values, but "
+                    "this classifier has no explicit fact-value consistency check. "
+                    "Use a source-aware verifier for factual decisions."
                 ),
                 "text": numeric_swap(item, 0.5, seed=1).text,
             },

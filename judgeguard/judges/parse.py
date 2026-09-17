@@ -18,11 +18,11 @@ _UNCLOSED_THINK = re.compile(r"<(think|thinking|reasoning)>.*", re.I | re.S)
 
 
 def strip_reasoning(text: str) -> str:
-    """Remove thinking blocks, unless that would leave nothing to parse."""
+    """Remove thinking blocks; an unfinished thought is not a final verdict."""
     if not text:
         return text
     stripped = _UNCLOSED_THINK.sub("", _THINK.sub("", text)).strip()
-    return stripped or text
+    return stripped
 
 
 _SCORE_PATTERNS = [

@@ -1,3 +1,5 @@
+> **Historical research document:** model findings in this document describe the original simulated study. For the current real-evidence workbench, supported features, and student limitations, read [the release guide](release.md) and the root README.
+
 # Where JudgeGuard fits, and how to write it up
 
 Working notes for the job hunt. Not part of the project docs.

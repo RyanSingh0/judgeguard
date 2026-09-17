@@ -13,7 +13,7 @@ import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from judgeguard.config import get_settings, load_registry
 from judgeguard.data.schema import Item, Judgment
@@ -31,7 +31,7 @@ class ScoreTask:
     uid: str
     item: Item
     answer: str
-    kind: str = "text"
+    kind: Literal["text", "trajectory"] = "text"
     degradation: str = "none"
     severity: float = 0.0
     len_ratio: float = 1.0

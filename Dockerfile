@@ -15,17 +15,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
 
-COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.3 /uv /usr/local/bin/uv
 
 WORKDIR /app
 # Dependency layer first: it changes far less often than the source.
-COPY pyproject.toml README.md ./
-COPY judgeguard/__init__.py judgeguard/__init__.py
-RUN uv venv /opt/venv && \
-    VIRTUAL_ENV=/opt/venv uv pip install --no-cache .
+COPY pyproject.toml uv.lock README.md ./
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+RUN uv sync --locked --no-dev --no-install-project
 
 COPY judgeguard/ judgeguard/
-RUN VIRTUAL_ENV=/opt/venv uv pip install --no-cache --no-deps .
+RUN uv sync --locked --no-dev --no-editable
 
 
 FROM python:3.12-slim AS runtime
@@ -33,7 +32,7 @@ FROM python:3.12-slim AS runtime
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    JUDGEGUARD_PROVIDER_MODE=auto \
+    JUDGEGUARD_PROVIDER_MODE=simulated \
     JUDGEGUARD_CACHE_DIR=/tmp/judgeguard-cache \
     HOME=/home/judge \
     JUDGEGUARD_GUARD_P99_BUDGET_MS=150 \

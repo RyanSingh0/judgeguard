@@ -114,7 +114,7 @@ function hashVector(tokens, nFeatures, offset) {
   for (const v of counts.values()) norm += v * v;
   norm = Math.sqrt(norm) || 1;
   const out = new Map();
-  for (const [i, v] of counts) out.set(i + offset, v / norm);
+  for (const [i, v] of counts) out.set(i + offset, Math.fround(v / norm));
   return out;
 }
 
@@ -214,7 +214,7 @@ export class BrowserGuard {
       ...coverageFeatures(context, question, answer, this.m.vocab),
     ];
     const base = nWord + nChar;
-    extra.forEach((v, k) => { if (v !== 0) vec.set(base + k, v); });
+    extra.forEach((v, k) => { if (v !== 0) vec.set(base + k, Math.fround(v)); });
     return vec;
   }
 

@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     )
     cache_dir: Path = Field(default=Path(".cache/llm"), alias="JUDGEGUARD_CACHE_DIR")
     results_dir: Path = Field(default=Path("results"), alias="JUDGEGUARD_RESULTS_DIR")
+    models_config: Path | None = Field(default=None, alias="JUDGEGUARD_MODELS_CONFIG")
     max_concurrency: int = Field(default=4, alias="JUDGEGUARD_MAX_CONCURRENCY")
     seed: int = Field(default=20260731, alias="JUDGEGUARD_SEED")
     guard_p99_budget_ms: float = Field(default=150.0, alias="JUDGEGUARD_GUARD_P99_BUDGET_MS")
@@ -66,6 +67,7 @@ class Settings(BaseSettings):
             "cerebras": self.cerebras_api_key,
             "openrouter": self.openrouter_api_key,
             "ollama": "local",
+            "llamacpp": "local",
         }.get(provider, "")
 
     def any_live_key(self) -> bool:
@@ -167,7 +169,9 @@ def _expand(value: Any) -> Any:
 
 @lru_cache(maxsize=1)
 def load_registry(path: Path | None = None) -> ModelRegistry:
-    path = path or (CONFIG_DIR / "models.yaml")
+    path = path or get_settings().models_config or (CONFIG_DIR / "models.yaml")
+    if not path.is_absolute():
+        path = REPO_ROOT / path
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     providers: dict[str, ProviderSpec] = {}
     for name, body in raw["providers"].items():

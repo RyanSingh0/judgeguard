@@ -1,4 +1,5 @@
 .venv/
+.models/
 .git/
 .cache/
 mlruns/
@@ -12,3 +13,12 @@ paper/
 tests/
 experiments/
 .github/
+.env
+.env.*
+!.env.example
+results/live/
+results/_ci/
+results/_quick/
+results/_smoke/
+results/raw/
+pytest-cache-files-*/

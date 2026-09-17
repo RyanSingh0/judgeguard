@@ -35,7 +35,7 @@ from judgeguard.config import get_settings
 from judgeguard.degrade.text import ERROR_DEGRADATIONS, PROBE_DEGRADATIONS, build_variants
 from judgeguard.distill.features import render_example
 from judgeguard.distill.train import Student, expected_calibration_error
-from judgeguard.store import RESULTS_DIR, load, save
+from judgeguard.store import load, save
 
 GREEN, RED, YELLOW, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[0m"
 
@@ -91,6 +91,7 @@ def main() -> int:
     )
     ap.add_argument("--seed", type=int, default=get_settings().seed)
     args = apply_quick_isolation(ap.parse_args())
+    from judgeguard.store import RESULTS_DIR
 
     if args.quick:
         # A student trained on 80 examples is genuinely bad, and gating it at
@@ -170,6 +171,24 @@ def main() -> int:
             truth.append(0)
             degs.append(v.degradation)
 
+    # Rebuilt students must be gated on their held-out source items. The legacy
+    # fixture protocol above is retained only for historical model snapshots.
+    training = load("09_distill")
+    heldout = training.get("heldout_records")
+    if heldout:
+        train_ids = {u.split(":")[0] for u in training["split"]["train_uids"]}
+        cal_ids = {u.split(":")[0] for u in training["split"]["calibration_uids"]}
+        test_ids = {r["uid"].split(":")[0] for r in heldout}
+        g.check(
+            "held-out source separation",
+            not (test_ids & (train_ids | cal_ids)),
+            len(test_ids),
+            "no train/calibration overlap",
+        )
+        texts = [render_example(r["question"], r["answer"], r["context"]) for r in heldout]
+        truth = [r["truth"] for r in heldout]
+        degs = [r["degradation"] for r in heldout]
+
     y = np.asarray(truth)
     p = student.predict_proba(texts)
     pred = (p >= student.threshold).astype(int)
@@ -228,6 +247,7 @@ def main() -> int:
             rate <= 0.25,
             f"{rate:.4f} detected",
             "<= 0.25 (documented as structural)",
+            gating=not bool(heldout),
         )
 
     # -------------------------------------------------------------- latency gate
@@ -276,6 +296,7 @@ def main() -> int:
 
     payload = {
         "gate": "regression_suite",
+        "evaluation_set": "held-out source items" if heldout else "legacy fixture protocol",
         "passed": not g.failed,
         "thresholds": {
             "fail_under": args.fail_under,

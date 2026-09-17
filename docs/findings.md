@@ -1,3 +1,5 @@
+> **Historical research document:** model findings in this document describe the original simulated study. For the current real-evidence workbench, supported features, and student limitations, read [the release guide](release.md) and the root README.
+
 # Findings
 
 **JudgeGuard — can you trust the judge?**

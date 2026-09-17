@@ -1,0 +1,50 @@
+name: student-promotion (experimental)
+
+# Eval-driven development: a change that makes the evaluator worse breaks the
+# build, exactly like a failing unit test. The gate runs against the
+# deterministic simulator, so it needs no API key, no quota and no secrets --
+# which is the only way an eval gate stays green on a fork's pull request.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      JUDGEGUARD_PROVIDER_MODE: simulated
+      JUDGEGUARD_CACHE_DIR: /tmp/jg-cache
+      UV_PYTHON: "3.12"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv sync --locked --extra dev
+
+      - name: Verify published snapshot before rebuilding
+        run: uv run --no-sync python scripts/verify_claims.py
+
+      - name: Rebuild the dataset and the student from scratch
+        env:
+          JUDGEGUARD_RESULTS_DIR: results/_ci
+        run: |
+          uv run python experiments/00_build_dataset.py --items 200
+          uv run python experiments/01_discrimination.py --items 200
+          uv run python experiments/05_rubric_ablation.py --items 200
+          uv run python experiments/08_trajectory_blindness.py --trajectories 60
+          uv run python experiments/09_distill.py --items 200
+
+      - name: Eval gate
+        env:
+          JUDGEGUARD_RESULTS_DIR: results/_ci
+        run: uv run python experiments/regression_suite.py --fail-under 0.70 --max-ece 0.15
+
+      - name: Fail if the rebuild modified published artifacts
+        run: git diff --exit-code -- results/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-gate-report
+          path: results/_ci/regression_gate.json

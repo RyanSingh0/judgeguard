@@ -16,6 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -23,17 +25,19 @@ jobs:
           enable-cache: true
       - run: uv python install ${{ matrix.python-version }}
       - name: Install
-        run: uv sync --extra dev --python ${{ matrix.python-version }}
+        run: uv sync --locked --extra dev --python ${{ matrix.python-version }}
       - name: Lint
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
       - name: Test
-        run: uv run pytest --cov=judgeguard --cov-report=term-missing
+        run: uv run --no-sync pytest --cov=judgeguard --cov-report=term-missing
       - name: Types
-        run: uv run mypy judgeguard || true
+        run: uv run --no-sync mypy --python-version ${{ matrix.python-version }} judgeguard
 
   browser-guardrail:
+    env:
+      UV_PYTHON: "3.12"
     # The static Space runs a JavaScript port of the distilled student. If it
     # ever stops agreeing with scikit-learn, the live demo is showing a
     # different model from the one the README describes.

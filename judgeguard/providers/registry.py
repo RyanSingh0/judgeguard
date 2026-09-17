@@ -12,7 +12,7 @@ from functools import lru_cache
 from typing import Any
 
 from judgeguard.config import ModelSpec, ProviderMode, get_settings, load_registry
-from judgeguard.providers.base import Completion
+from judgeguard.providers.base import Completion, ProviderError
 from judgeguard.providers.cache import cached_complete
 from judgeguard.providers.http_base import GeminiProvider, OllamaProvider, OpenAICompatProvider
 from judgeguard.providers.simulated import SimulatedProvider
@@ -52,13 +52,16 @@ def is_simulated(alias: str) -> bool:
     spec = resolve(alias)
     if spec.provider == "ollama":
         return False
-    return not s.key_for(spec.provider)
+    # Live mode never fabricates an answer when credentials are missing.
+    return False
 
 
 def mode_banner() -> str:
     s = get_settings()
     mode = s.effective_mode().value
-    live = [a for a in load_registry().panel if not is_simulated(a)]
+    live = [
+        a for a in load_registry().panel if not is_simulated(a) and s.key_for(resolve(a).provider)
+    ]
     return f"provider_mode={mode} live_models={live or 'none'}"
 
 
@@ -79,6 +82,11 @@ def complete(
         provider: Any = _simulator()
         model_id = spec.id
     else:
+        if spec.provider != "ollama" and not get_settings().key_for(spec.provider):
+            raise ProviderError(
+                f"No API key configured for {spec.provider} ({alias}). "
+                "Add the provider secret or explicitly select simulated mode."
+            )
         provider = _live_provider(spec.provider)
         model_id = spec.id
         # Seed the limiter from config before the first call. Without this,

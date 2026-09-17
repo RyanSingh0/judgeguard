@@ -1,0 +1,162 @@
+{
+  "provenance": {
+    "mode": "simulated",
+    "seed": 20260731,
+    "git_sha": "05be5b3",
+    "python": "3.12.13",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "generated_at": "2026-09-17T15:32:30+00:00"
+  },
+  "gate": "regression_suite",
+  "evaluation_set": "held-out source items",
+  "passed": false,
+  "thresholds": {
+    "fail_under": 0.7,
+    "max_ece": 0.15,
+    "p99_budget_ms": 150.0
+  },
+  "measurements": {
+    "accuracy": 0.5625,
+    "block_precision": 0.543859649122807,
+    "false_block_rate": 0.65,
+    "bad_output_caught": 0.775,
+    "ece": 0.11513257951853444,
+    "p99_ms": 6.444590010796681
+  },
+  "checks": [
+    {
+      "name": "corpus is non-degenerate",
+      "passed": true,
+      "observed": "120 unique / 120",
+      "expected": "all distinct",
+      "gating": true
+    },
+    {
+      "name": "every variant carries an audit trail",
+      "passed": true,
+      "observed": "all",
+      "expected": "non-empty edit description",
+      "gating": true
+    },
+    {
+      "name": "verbosity probe introduces no error",
+      "passed": true,
+      "observed": "360 probe variants",
+      "expected": "only the verbosity probe",
+      "gating": true
+    },
+    {
+      "name": "error variants differ from their reference",
+      "passed": true,
+      "observed": "all differ",
+      "expected": "no accidental no-ops",
+      "gating": true
+    },
+    {
+      "name": "degradation set complete",
+      "passed": true,
+      "observed": 6,
+      "expected": "6 types",
+      "gating": true
+    },
+    {
+      "name": "held-out source separation",
+      "passed": true,
+      "observed": 40,
+      "expected": "no train/calibration overlap",
+      "gating": true
+    },
+    {
+      "name": "guardrail accuracy vs ground truth",
+      "passed": false,
+      "observed": "0.5625",
+      "expected": ">= 0.7",
+      "gating": true
+    },
+    {
+      "name": "guardrail block precision",
+      "passed": false,
+      "observed": "0.5439",
+      "expected": ">= 0.90",
+      "gating": true
+    },
+    {
+      "name": "guardrail false-block rate",
+      "passed": false,
+      "observed": "0.6500",
+      "expected": "<= 0.05",
+      "gating": true
+    },
+    {
+      "name": "guardrail catches bad output",
+      "passed": true,
+      "observed": "0.7750",
+      "expected": ">= 0.35",
+      "gating": true
+    },
+    {
+      "name": "guardrail calibration error",
+      "passed": true,
+      "observed": "0.1151",
+      "expected": "<= 0.15",
+      "gating": true
+    },
+    {
+      "name": "documented blind spot: numeric_swap",
+      "passed": false,
+      "observed": "0.8462 detected",
+      "expected": "<= 0.25 (documented as structural)",
+      "gating": false
+    },
+    {
+      "name": "documented blind spot: topic_drift",
+      "passed": false,
+      "observed": "0.3750 detected",
+      "expected": "<= 0.25 (documented as structural)",
+      "gating": false
+    },
+    {
+      "name": "guardrail p99 latency",
+      "passed": true,
+      "observed": "6.44 ms",
+      "expected": "<= 150 ms",
+      "gating": true
+    },
+    {
+      "name": "CI reported for llama70b",
+      "passed": true,
+      "observed": "[0.888, 0.909]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for qwen27b",
+      "passed": true,
+      "observed": "[0.856, 0.880]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for gptoss20b",
+      "passed": true,
+      "observed": "[0.813, 0.839]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "CI reported for gemini-lite",
+      "passed": true,
+      "observed": "[0.917, 0.936]",
+      "expected": "a real interval",
+      "gating": true
+    },
+    {
+      "name": "argument-blindness finding present",
+      "passed": true,
+      "observed": "0.678 miss rate (gptoss20b)",
+      "expected": "> 0",
+      "gating": true
+    }
+  ],
+  "seconds": 0.9104431000014301
+}

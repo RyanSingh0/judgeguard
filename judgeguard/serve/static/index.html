@@ -21,7 +21,7 @@
   <div class="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center gap-4">
     <div class="flex-1 min-w-[260px]">
       <h1 class="text-2xl font-bold tracking-tight">JudgeGuard</h1>
-      <p class="text-sm text-slate-600">Can you trust the judge? Measured judge reliability, shipped as an inline guardrail.</p>
+      <p class="text-sm text-slate-600">Can you trust the judge? Real evaluation evidence and an experimental inline guardrail.</p>
     </div>
     <div id="provenance" class="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 mono">checking…</div>
     <a href="/docs" class="text-xs px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50">API docs</a>
@@ -30,9 +30,17 @@
 
 <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
+  <section class="card p-5">
+    <h2 class="font-semibold mb-2">Real-model evaluation · numeric source support</h2>
+    <p id="pilot-result" class="text-sm text-slate-600">Loading the published benchmark…</p>
+    <p class="text-xs text-slate-500 mt-3">Human-annotated SQuAD passages with constructed numeric errors. Ties and parse failures count as failures. This pilot is separate from the historical simulation below.</p>
+    <a class="text-sm underline" href="/benchmark">Inspect data and model provenance</a>
+  </section>
+  <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4">Prototype: the historical charts below use simulated judges. The inline student was trained on simulation and can miss factual errors. Its allow/block decision is not a factual verification.</p>
+
   <!-- findings -->
   <section>
-    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">What the battery found</h2>
+    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Historical simulation results</h2>
     <div id="findings" class="grid md:grid-cols-3 gap-4"></div>
   </section>
 
@@ -47,7 +55,7 @@
       <label class="block text-xs font-medium text-slate-500 mb-1">Question</label>
       <textarea id="question" rows="2" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
 
-      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Source context <span class="font-normal">(used by the LLM judge only)</span></label>
+      <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Source context <span class="font-normal">(used by both evaluators)</span></label>
       <textarea id="context" rows="3" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
 
       <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">Candidate answer</label>
@@ -66,8 +74,8 @@
       </div>
       <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">
         The two buttons are not the same product. <strong>Guardrail</strong> is inline: distilled model only,
-        no network call inside the request, hard millisecond budget. <strong>Judge</strong> is asynchronous:
-        a full LLM call, with that judge's measured reliability attached to its score.
+        no network call inside the request, with measured latency. <strong>Judge</strong> waits for
+        a full model response. Its result says whether the model was real or simulated.
       </p>
     </div>
 
@@ -116,7 +124,7 @@
 </div>
 
 <footer class="text-xs text-slate-500 pt-4 pb-10 border-t border-[#e6e9ee]">
-    Every number carries a 95% BCa bootstrap interval. Results are served from committed files, so this page
+    Intervals and evidence sources are identified in each report. Results are served from committed files, so this page
     renders with no API key. <span id="foot-mode" class="mono"></span>
   </footer>
 </main>
@@ -147,6 +155,11 @@ const FIGURES = [
 
 async function boot(){
   try {
+    const b = await jget('/benchmark');
+    const a = b.summary.discrimination_accuracy;
+    $('pilot-result').textContent = `${(100*a.value).toFixed(1)}% discrimination accuracy across ${a.n_pairs} pairs from ${a.n_clusters} articles. 95% article-cluster interval: ${(100*a.lo).toFixed(1)}–${(100*a.hi).toFixed(1)}%. Model: ${b.model.name}. ${b.summary.pairs_with_parse_failure} pairs with parse failures.`;
+  } catch(e) { $('pilot-result').textContent = 'No completed real-model pilot has been published in this build.'; }
+  try {
     const h = await jget('/health');
     const simulated = h.provider_mode.includes('simulated');
     $('provenance').textContent = h.provider_mode;
@@ -166,10 +179,9 @@ async function boot(){
   } catch(e){}
 
   try {
-    const r = await jget('/report');
-    const judges = (r.results['01_discrimination']||{}).judges || ['gemini-flash'];
-    $('judge').innerHTML = judges.map(j => `<option>${j}</option>`).join('');
-  } catch(e){ $('judge').innerHTML = '<option>gemini-flash</option>'; }
+    const r = await jget('/models');
+    $('judge').replaceChildren(...r.panel.map(j => { const o = document.createElement('option'); o.value = j; o.textContent = j; return o; }));
+  } catch(e){ $('btn-eval').disabled = true; }
 
   try {
     const ex = await jget('/examples');
@@ -296,7 +308,7 @@ function bar(p, thr){
 $('btn-guard').onclick = async () => {
   $('guard-out').innerHTML = '<span class="pulse-dot">scoring…</span>';
   try {
-    const d = await jpost('/guard', {question:$('question').value, answer:$('answer').value});
+    const d = await jpost('/guard', {question:$('question').value, context:$('context').value, answer:$('answer').value});
     const ok = d.decision === 'allow';
     $('guard-out').innerHTML = `
       <div class="flex items-center gap-3">
@@ -311,7 +323,7 @@ $('btn-guard').onclick = async () => {
         ${Object.entries(d.signals).map(([k,v]) =>
           `<tr><td class="py-0.5 pr-3 text-slate-400">${k}</td><td class="text-right">${(+v).toFixed(4)}</td></tr>`).join('')}
       </table>`;
-  } catch(e){ $('guard-out').innerHTML = `<span class="text-rose-600 text-xs">${e.message}</span>`; }
+  } catch(e){ $('guard-out').textContent = e.message; }
 };
 
 $('btn-eval').onclick = async () => {
@@ -336,7 +348,7 @@ $('btn-eval').onclick = async () => {
         ${weak?`<div>Weakest against <strong>${weak.type.replace(/_/g,' ')}</strong>: ${pct(weak.value)}</div>`:''}
         ${pos?`<div>Changes its verdict on <strong>${pct(pos.value)}</strong> of comparisons when options are swapped</div>`:''}
       </div>`;
-  } catch(e){ $('eval-out').innerHTML = `<span class="text-rose-600 text-xs">${e.message}</span>`; }
+  } catch(e){ $('eval-out').textContent = e.message; }
 };
 
 boot();

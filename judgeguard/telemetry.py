@@ -104,7 +104,7 @@ def tracking_run(
     if importlib.util.find_spec("mlflow") is None:
         yield _NullRun()
         return
-    import mlflow  # type: ignore
+    import mlflow
 
     if uri:
         mlflow.set_tracking_uri(uri)

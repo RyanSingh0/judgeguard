@@ -31,7 +31,7 @@ from judgeguard.distill.features import render_example
 from judgeguard.distill.train import Student
 from judgeguard.judges.run import ScoreTask, panel, run_scores
 from judgeguard.stats.intervals import bca_ci, paired_bootstrap_diff
-from judgeguard.store import RESULTS_DIR, load, save
+from judgeguard.store import load, save
 from judgeguard.telemetry import tracking_run
 
 ACCEPT_AT = 7.0
@@ -71,6 +71,8 @@ def main() -> None:
     ap.add_argument("--featurizer", default="hashing", choices=["hashing", "minilm"])
     ap.add_argument("--max-false-allow", type=float, default=0.25)
     args = apply_quick_isolation(ap.parse_args())
+    from judgeguard.store import RESULTS_DIR
+
     n_items = 40 if args.quick else args.items
 
     t0 = banner("09  distillation: teacher -> calibrated student")
@@ -148,14 +150,24 @@ def main() -> None:
         # below lands on a test set containing every class. Without it the split
         # can drop one, and then the numeric-substitution vs hedging contrast is
         # computed from a table with rows missing.
-        report, extra = student.fit(texts, teacher_label, truth, strat_on=degs)
+        report, extra = student.fit(
+            texts,
+            teacher_label,
+            truth,
+            strat_on=degs,
+            item_groups=[j.uid.split(":")[0] for j in rows],
+        )
 
         te = np.array(extra["test_indices"])
         p = np.array(extra["test_probabilities"])
         y_teacher = np.array(extra["test_labels"])
         y_truth = np.array(extra["test_truth"])
 
-        thr = student.choose_threshold(p, y_truth, max_false_allow=args.max_false_allow)
+        thr = student.choose_threshold(
+            np.asarray(extra["calibration_probabilities"]),
+            np.asarray(extra["calibration_truth"]),
+            max_false_allow=args.max_false_allow,
+        )
         student_pred = (p >= thr).astype(int)
 
         student_correct = (student_pred == y_truth).astype(int).tolist()
@@ -273,6 +285,24 @@ def main() -> None:
                 "labels_generated": len(rows),
             },
             "student": report.as_dict(),
+            "heldout_records": [
+                {
+                    "uid": rows[k].uid,
+                    "question": answer_of[rows[k].uid][0],
+                    "answer": answer_of[rows[k].uid][1],
+                    "context": answer_of[rows[k].uid][2],
+                    "truth": truth_of[rows[k].uid],
+                    "degradation": deg_of[rows[k].uid],
+                }
+                for k in extra["test_indices"]
+            ],
+            "split": {
+                "unit": extra["split_unit"],
+                "threshold_selected_on": "calibration, never test",
+                "train_uids": [rows[i].uid for i in extra["train_indices"]],
+                "calibration_uids": [rows[i].uid for i in extra["calibration_indices"]],
+                "test_uids": [rows[i].uid for i in extra["test_indices"]],
+            },
             "operating_point": {
                 "threshold": thr,
                 # What a guardrail is actually judged on: does it block bad output
@@ -287,7 +317,7 @@ def main() -> None:
                 "bad_output_caught": float(
                     ((y_truth == 0) & (student_pred == 0)).sum() / max((y_truth == 0).sum(), 1)
                 ),
-                "chosen_by": f"most permissive threshold whose false-allow rate stays <= {args.max_false_allow:.0%}",
+                "chosen_by": f"maximum balanced accuracy on calibration under false-allow <= {args.max_false_allow:.0%}; 0.5 fallback if infeasible",
                 "false_allow_rate": float(
                     ((y_truth == 0) & (student_pred == 1)).sum() / max((student_pred == 1).sum(), 1)
                 ),
@@ -310,7 +340,7 @@ def main() -> None:
                     "student": balanced(student_pred),
                 },
                 "verdict": (
-                    "statistically indistinguishable from the teacher at its best threshold"
+                    "no detected difference from the test-tuned teacher; equivalence is not established"
                     if not gap_oracle.significant
                     else (
                         "student significantly better than the teacher at its best threshold"
@@ -387,11 +417,13 @@ def main() -> None:
                 ),
                 "rows": cascade_rows,
                 "judge_only_accuracy": judge_only.as_dict(),
-                "recommended": best_cascade,
+                "recommended": None,
+                "exploratory_test_selected_point": best_cascade,
+                "caveat": "Test-selected margins and an oracle teacher cutoff; exploratory only. CI overlap does not establish equivalence. No serving cascade is implemented.",
                 "sentence": (
                     (
                         f"Escalating only {100 * best_cascade['escalation_rate']:.0f}% of traffic "
-                        f"to the LLM judge matched judge-only accuracy "
+                        f"to the LLM judge gave exploratory test accuracy "
                         f"({100 * best_cascade['combined_accuracy']['value']:.1f}% vs "
                         f"{100 * judge_only.value:.1f}%) at "
                         f"{100 * best_cascade['escalation_rate']:.0f}% of the cost and "

@@ -374,7 +374,9 @@ def main() -> int:
     if n_fail:
         print(f"{RED}{n_fail} discrepancies — fix the prose or rerun the experiment{RESET}")
         return 1
-    print(f"{GREEN}every number in the prose is traceable to results/{RESET}")
+    print(
+        f"{GREEN}the configured snapshot assertions match results/; this does not validate every prose claim or its methodology{RESET}"
+    )
     return 0
 
 

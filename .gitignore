@@ -1,4 +1,5 @@
 .venv/
+.models/
 __pycache__/
 *.py[cod]
 .env
@@ -16,4 +17,6 @@ build/
 # without an API key. Only raw provider dumps are ignored.
 results/raw/
 results/_smoke/
+results/_ci/
+results/live/
 # site/ IS the deployed Space and is committed on purpose.

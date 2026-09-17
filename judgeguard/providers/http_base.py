@@ -41,7 +41,7 @@ LIMITER = Limiter(_state)
 
 # QuotaExhaustedError is left out on purpose. It isn't retryable, and putting
 # it here would bring back the bug this module exists to fix.
-RETRY = dict(
+RETRY: dict[str, Any] = dict(
     retry=retry_if_exception_type((RateLimitError, TransientError, httpx.TransportError)),
     wait=wait_random_exponential(multiplier=1.5, min=1, max=60),
     stop=stop_after_attempt(6),
@@ -139,7 +139,7 @@ class OpenAICompatProvider:
             h["X-Title"] = "JudgeGuard"
         return h
 
-    @retry(**RETRY)  # type: ignore[arg-type]
+    @retry(**RETRY)
     def complete(
         self,
         prompt: str,
@@ -208,7 +208,7 @@ class GeminiProvider:
         self.api_key = api_key
         self._client = httpx.Client(timeout=timeout)
 
-    @retry(**RETRY)  # type: ignore[arg-type]
+    @retry(**RETRY)
     def complete(
         self,
         prompt: str,
@@ -287,7 +287,7 @@ class OllamaProvider:
         self.base_url = base_url.rstrip("/")
         self._client = httpx.Client(timeout=timeout)
 
-    @retry(**RETRY)  # type: ignore[arg-type]
+    @retry(**RETRY)
     def complete(
         self,
         prompt: str,

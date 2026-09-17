@@ -50,15 +50,15 @@ def sparse(coef: np.ndarray) -> dict:
     idx = np.flatnonzero(np.abs(coef) > COEF_EPS)
     return {
         "i": idx.astype(int).tolist(),
-        "v": [round(float(x), 7) for x in coef[idx]],
+        "v": [float(x) for x in coef[idx]],
     }
 
 
 def iso(cal) -> dict:
     """An isotonic regressor is just a monotone step function: knots + values."""
     return {
-        "x": [round(float(v), 7) for v in cal.X_thresholds_],
-        "y": [round(float(v), 7) for v in cal.y_thresholds_],
+        "x": [float(v) for v in cal.X_thresholds_],
+        "y": [float(v) for v in cal.y_thresholds_],
     }
 
 

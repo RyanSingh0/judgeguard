@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import platform
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -95,6 +96,8 @@ def save(name: str, payload: dict[str, Any], *, subdir: str = "") -> Path:
 
 
 def load(name: str, *, subdir: str = "") -> dict[str, Any]:
+    if not re.fullmatch(r"[A-Za-z0-9_-]+(?:\.json)?", name):
+        raise ValueError("experiment must be a result name, without directories")
     out_dir = RESULTS_DIR / subdir if subdir else RESULTS_DIR
     path = out_dir / (name if name.endswith(".json") else f"{name}.json")
     if not path.exists():
