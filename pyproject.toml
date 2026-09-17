@@ -38,7 +38,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-demo = ["gradio==6.27.0"]
+# Spaces installs these extras automatically; include their constraints locally.
+demo = ["gradio[oauth,mcp]==6.27.0"]
 # Heavy, optional. The pipeline falls back to a hashing vectoriser if absent,
 # so `uv sync` stays fast in CI and the repo runs on a laptop with no GPU.
 embeddings = ["sentence-transformers>=3.0"]

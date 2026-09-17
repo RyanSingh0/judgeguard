@@ -25,6 +25,14 @@ app and bundle, use `deploy/README.gradio.md` as the Space README, and update th
 immutable commit in requirements after testing. Match the SDK version to the pinned
 Gradio version. Upload through the Space Files tab or commit through the Hub CLI.
 
+Export deployment dependencies with `uv export --locked --extra demo --no-dev
+--no-hashes --no-emit-project --output-file requirements.txt`, then append
+`judgeguard @ git+https://github.com/RyanSingh0/judgeguard.git@<tested-full-commit>`.
+The demo extra includes Gradio's `oauth,mcp` constraints because Spaces injects
+those extras during its build. They constrain Pydantic to a compatible version;
+exporting the plain Gradio environment caused the initial hosted build to fail.
+These optional integrations are not enabled as product features by the app.
+
 ## What the release gates mean
 
 The normal workflows test code, tool replay and the immutable measured evidence.
