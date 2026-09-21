@@ -1,24 +1,19 @@
 # Deploying the demo
 
-Two routes. **Static is the recommended one** — it is free, instant, and the resulting demo is
-arguably a better artefact than the server version.
+The static demo runs the exported guardrail in the browser. A container deployment also exposes the backend evaluation API.
 
 ---
 
 ## Route A — Static Space (free, recommended)
 
-Hugging Face charges for Docker and Gradio Spaces; **Static Spaces are free for everyone**. That
-constraint turned out to suit this project: the distilled guardrail is a logistic model over hashed
-n-grams plus an isotonic step function, so the entire inference path is a sparse dot product. There
-is nothing in it that needs a server.
+The distilled guardrail is a logistic model over hashed n-grams plus an isotonic step function. Its inference path is a sparse dot product and needs no server.
 
 `site/` therefore contains a JavaScript port of the student that produces **the same numbers as
 scikit-learn** — `site/parity.test.js` asserts agreement to within 1e-6 on 30 fixtures exported from
 Python, and it runs in CI. The LLM `/evaluate` path is dropped rather than faked, because a static
 page cannot hold an API key.
 
-What you gain over the Docker route: no cold start, no sleeping, $0 forever, and the line *"the
-guardrail is so cheap it runs in your browser"*.
+Hosting plans and limits can change; check the provider before deployment.
 
 ### Build
 
@@ -76,11 +71,10 @@ Open `https://RugFace-judgeguard.static.hf.space`, click through the five exampl
 - hedging, omission, padded → **block**
 - numeric swap → **allow**, at a probability identical to the reference (the documented blind spot)
 
-Then put the URL in the GitHub README's `## Try it` section and in LinkedIn Featured.
 
 ---
 
-## Route B — Docker Space (requires HF PRO, ~$9/month)
+## Route B — Docker Space
 
 Only worth it if you want the **LLM judge path** (`POST /evaluate`) live as well. Everything is
 already built; nothing changes in the code.
@@ -108,6 +102,4 @@ sleep after inactivity and wake in ~30 s.
 
 ## Route C — full app on another free host
 
-If you want the FastAPI service live without paying HF, Render / Koyeb / Railway all have free
-tiers and will build the existing `Dockerfile` directly. They sleep aggressively and change terms
-often, and they are not where ML people browse — which is the main argument for Route A.
+The existing `Dockerfile` can run on another container host. Verify current pricing, idle behavior, resource limits and secret handling before deploying.

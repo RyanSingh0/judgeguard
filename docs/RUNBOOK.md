@@ -240,7 +240,7 @@ non-root user, healthcheck included.
 
 ## 7. Deploy
 
-### Fly.io — scale-to-zero, so an idle demo is free
+### Fly.io
 
 ```bash
 fly auth login
@@ -249,14 +249,11 @@ fly secrets set GEMINI_API_KEY=... GROQ_API_KEY=...
 fly deploy && fly open
 ```
 
-### Hugging Face Spaces — no card required, and the recommended option
+### Hugging Face Spaces
 
 Spaces need a README with YAML frontmatter, so the Space card and the push procedure live in
-**[`deploy/hf-space/DEPLOY.md`](../deploy/hf-space/DEPLOY.md)**. Create a **Docker** Space on CPU
-basic, push, optionally add keys as secrets. Works with no keys at all.
+**[`deploy/hf-space/DEPLOY.md`](../deploy/hf-space/DEPLOY.md)**. Use the static route for browser inference or a container for the backend API. Keep provider keys in hosting secrets. Check current hosting costs before deployment.
 
-**Put the URL in the README's `## Try it` section and in LinkedIn Featured. A live link is
-verifiable in ten seconds; a repo is not.**
 
 ---
 
