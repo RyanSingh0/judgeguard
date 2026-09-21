@@ -54,19 +54,6 @@ as `results/student_promotion.json`. Moving experimental promotion out of the wo
 release path is a product boundary change, not a relaxation of the model's criteria.
 The student must pass before it can be promoted to production blocking.
 
-## Interview demonstration
-
-Lead with agent traces for AI/ML engineering or agent-evaluation roles. Show a correct
-answer reached through a wrong argument, explain independent replay and the missing
-causal guarantees, then contrast it with a judge that accepts a wrong numeric answer.
-For retrieval-focused roles, lead with source passages, leakage prevention and the
-100-pair pilot instead. Neither focus guarantees recruiter interest; the strong signal
-is explaining the implementation, evidence, failure cases and limits clearly.
-
-[Anthropic's engineering account of agent evals](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
-describes combining execution checks, model-based graders and human review. This
-project implements a deliberately small part of that pattern. Its trace examples are
-constructed, not production traces, and the real Qwen pilot evaluates text answers.
 
 ## Next research milestone
 

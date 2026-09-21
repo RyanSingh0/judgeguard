@@ -20,3 +20,5 @@ results/_smoke/
 results/_ci/
 results/live/
 # site/ IS the deployed Space and is committed on purpose.
+
+private-notes/
