@@ -1,3 +1,4 @@
 # Experimental evidence is checksummed byte-for-byte. Preserve the original
 # line endings on every platform rather than rewriting them during checkout.
 *.jsonl -text
+*.pdf binary

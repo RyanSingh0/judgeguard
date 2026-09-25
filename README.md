@@ -6,6 +6,8 @@ JudgeGuard is an **evaluation workbench for agent tool traces and LLM judges**.
 Replay a trace, find the exact inconsistent call, and inspect real judge responses
 against source-supported answers. The public demo runs without API keys.
 
+[One-page case study (PDF)](docs/case-study.pdf)
+
 [![CI](https://github.com/RyanSingh0/judgeguard/actions/workflows/ci.yml/badge.svg)](https://github.com/RyanSingh0/judgeguard/actions/workflows/ci.yml)
 [![Evidence and replay](https://github.com/RyanSingh0/judgeguard/actions/workflows/eval.yml/badge.svg)](https://github.com/RyanSingh0/judgeguard/actions/workflows/eval.yml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)](pyproject.toml)
